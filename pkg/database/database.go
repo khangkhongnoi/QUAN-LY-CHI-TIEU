@@ -2,7 +2,6 @@ package database
 
 import (
 	"QUAN-LY-CHI-TIEU/pkg/models"
-	"fmt"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -11,10 +10,7 @@ import (
 
 var DB *gorm.DB
 
-func InitDB(host, user, password, dbname, port string) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Ho_Chi_Minh",
-		host, user, password, dbname, port)
-
+func InitDB(dsn string) {
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

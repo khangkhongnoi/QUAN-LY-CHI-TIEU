@@ -6,10 +6,29 @@
     <title>Quản Lý Chi Tiêu</title>
     <link rel="icon" type="image/png" href="../static/images/good-icon.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         @media (max-width: 576px) {
             .input-group { flex-direction: column; }
             .input-group select, .input-group input { width: 100%!important; margin: 5px 0; }
+        }
+        
+        #searchResults {
+            position: absolute;
+            z-index: 1000;
+            width: calc(40% - 2rem);
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 38px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .category-result {
+            cursor: pointer;
+        }
+        
+        .category-result:hover {
+            background-color: #f8f9fa;
         }
     </style>
 </head>
@@ -20,10 +39,23 @@
         <div class="card-body">
             <form id="expenseForm" class="row g-2">
                 <div class="col-12 col-md-6">
-                    <select class="form-select" id="category" name="category_id" required>
-                        <option value="">Chọn danh mục</option>
-                        <!-- Categories sẽ được thêm bằng JS -->
-                    </select>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="categorySearch" placeholder="Tìm kiếm danh mục...">
+                    </div>
+                    <div class="input-group">
+                        <select class="form-select" id="category" name="category_id" required>
+                            <option value="">Chọn danh mục</option>
+                            <!-- Categories sẽ được thêm bằng JS -->
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                            <i class="bi bi-plus"></i> Tạo mới
+                        </button>
+                    </div>
+                    <div id="searchResults" class="mt-1 d-none">
+                        <div class="list-group" id="categorySearchResults">
+                            <!-- Kết quả tìm kiếm sẽ được thêm bằng JS -->
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-12 col-md-6" id="newCategorySection" style="display: none;">
@@ -99,6 +131,7 @@
                         <th>Số tiền</th>
                         <th>Thời gian</th>
                         <th>Hình ảnh</th>
+                        <th>Ghi chú</th>
                         <th>Thao tác</th>
                     </tr>
                     </thead>
@@ -121,6 +154,32 @@
             </div>
             <div class="modal-body text-center">
                 <img id="modalImage" src="" alt="Hình ảnh chi tiêu" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal tạo danh mục mới -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tạo danh mục mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Tên danh mục</label>
+                        <input type="text" class="form-control" id="categoryName" required>
+                        <div class="form-text">Nhập tên cho danh mục chi tiêu mới</div>
+                    </div>
+                    <div id="categoryError" class="alert alert-danger d-none"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveCategory">Lưu danh mục</button>
             </div>
         </div>
     </div>
@@ -174,7 +233,7 @@
         // Cập nhật lại giá trị vào FormData
         formData.set('amount', soTien);
         // Sử dụng FormData trực tiếp để hỗ trợ upload file
-        const response = await fetch('/add', {
+        const response = await fetch('http://localhost:8403/add', {
             method: 'POST',
             body: formData
         });
@@ -189,20 +248,26 @@
     // Load dữ liệu
     async function loadData() {
         await Promise.all([
-            fetch('/summary').then(res => res.json()).then(data => {
+            fetch('http://localhost:8403/summary').then(res => res.json()).then(data => {
                 document.getElementById('dailyTotal').textContent =
                     `${data.daily.toLocaleString()} VND`;
                 document.getElementById('monthlyTotal').textContent =
                     `${data.monthly.toLocaleString()} VND`;
             }),
 
-            fetch('/expenses').then(res => res.json()).then(expenses => {
+            fetch('http://localhost:8403/expenses').then(res => res.json()).then(expenses => {
                 const tbody = document.getElementById('expensesList');
                 tbody.innerHTML = expenses.map(expense => `
                         <tr>
                             <td>${expense.Category.Name}</td>
                             <td class="text-nowrap">${expense.Amount.toLocaleString()} VND</td>
-                            <td>${new Date(expense.CreatedAt).toLocaleDateString('vi-VN')}</td>
+                           <td>${new Date(expense.CreatedAt).toLocaleString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })}</td>
                             <td>
                                 ${expense.ImageData ? 
                                     `<a href="#" class="image-preview" data-image="${expense.ImageData}">
@@ -214,6 +279,7 @@
                                          </a>` : 
                                         'Không có')}
                             </td>
+                               <td>${expense.Note}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger delete-btn" data-id="${expense.ID}">
                                     Xóa
@@ -225,10 +291,16 @@
         ]);
     }
 
+    // Biến lưu trữ danh sách danh mục
+    let allCategories = [];
+    
     // Load categories
     async function loadCategories() {
-        const response = await fetch('/categories');
+        const response = await fetch('http://localhost:8403/categories');
         const categories = await response.json();
+        
+        // Lưu danh sách danh mục để sử dụng cho tìm kiếm
+        allCategories = categories;
 
         const select = document.getElementById('category');
         select.innerHTML = `
@@ -245,6 +317,150 @@
                 select.value === '5' ? 'block' : 'none';
         });
     }
+    
+    // Xử lý tìm kiếm danh mục - tìm kiếm ngay khi nhập
+    document.getElementById('categorySearch').addEventListener('input', searchCategory);
+    
+    function searchCategory() {
+        const searchTerm = document.getElementById('categorySearch').value.trim().toLowerCase();
+        const resultsContainer = document.getElementById('searchResults');
+        const resultsList = document.getElementById('categorySearchResults');
+        
+        // Nếu không có từ khóa tìm kiếm, ẩn kết quả
+        if (!searchTerm) {
+            resultsContainer.classList.add('d-none');
+            return;
+        }
+        
+        // Tìm kiếm danh mục phù hợp
+        const matchedCategories = allCategories.filter(cat => 
+            cat.Name.toLowerCase().includes(searchTerm)
+        );
+        
+        // Hiển thị kết quả
+        if (matchedCategories.length > 0) {
+            resultsList.innerHTML = matchedCategories.map(cat => `
+                <button type="button" class="list-group-item list-group-item-action category-result" 
+                        data-id="${cat.ID}" data-name="${cat.Name}">
+                    ${cat.Name}
+                </button>
+            `).join('');
+            
+            resultsContainer.classList.remove('d-none');
+            
+            // Thêm sự kiện click cho các kết quả
+            document.querySelectorAll('.category-result').forEach(item => {
+                item.addEventListener('click', function() {
+                    const categoryId = this.dataset.id;
+                    const categoryName = this.dataset.name;
+                    
+                    // Chọn danh mục trong dropdown
+                    document.getElementById('category').value = categoryId;
+                    
+                    // Cập nhật ô tìm kiếm
+                    document.getElementById('categorySearch').value = categoryName;
+                    
+                    // Ẩn kết quả
+                    resultsContainer.classList.add('d-none');
+                });
+            });
+        } else {
+            // Không tìm thấy kết quả, hiển thị tùy chọn tạo mới
+            resultsList.innerHTML = `
+                <div class="list-group-item">
+                    Không tìm thấy danh mục "${searchTerm}"
+                    <button type="button" class="btn btn-sm btn-primary mt-1" id="createNewFromSearch">
+                        <i class="bi bi-plus-circle"></i> Tạo mới danh mục này
+                    </button>
+                </div>
+            `;
+            
+            resultsContainer.classList.remove('d-none');
+            
+            // Thêm sự kiện click cho nút tạo mới
+            document.getElementById('createNewFromSearch').addEventListener('click', function() {
+                // Điền tên danh mục vào modal
+                document.getElementById('categoryName').value = searchTerm;
+                
+                // Hiển thị modal tạo danh mục
+                const categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+                categoryModal.show();
+                
+                // Ẩn kết quả tìm kiếm
+                resultsContainer.classList.add('d-none');
+            });
+        }
+    }
+    
+    // Ẩn kết quả tìm kiếm khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#categorySearch') && 
+            !e.target.closest('#searchResults')) {
+            document.getElementById('searchResults').classList.add('d-none');
+        }
+    });
+    
+    // Xử lý tạo danh mục mới
+    document.getElementById('saveCategory').addEventListener('click', async () => {
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const errorElement = document.getElementById('categoryError');
+        
+        // Kiểm tra tên danh mục
+        if (!categoryName) {
+            errorElement.textContent = 'Vui lòng nhập tên danh mục';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        try {
+            const response = await fetch('http://localhost:8403/categories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: categoryName }),
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                errorElement.textContent = result.error || 'Có lỗi xảy ra khi tạo danh mục';
+                errorElement.classList.remove('d-none');
+                return;
+            }
+            
+            // Đóng modal và làm mới danh sách danh mục
+            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+            modal.hide();
+            
+            // Lưu tên danh mục đã tạo
+            const createdCategoryName = categoryName;
+            
+            // Reset form
+            document.getElementById('categoryName').value = '';
+            errorElement.classList.add('d-none');
+            
+            // Làm mới danh sách danh mục
+            await loadCategories();
+            
+            // Cập nhật ô tìm kiếm với tên danh mục mới
+            document.getElementById('categorySearch').value = createdCategoryName;
+            
+            // Tìm và chọn danh mục mới trong dropdown
+            const newCategory = allCategories.find(cat => cat.Name.toLowerCase() === createdCategoryName.toLowerCase());
+            if (newCategory) {
+                document.getElementById('category').value = newCategory.ID;
+            }
+            
+            // Hiển thị thông báo thành công
+            alert('Tạo danh mục thành công!');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            errorElement.textContent = 'Có lỗi xảy ra khi kết nối đến máy chủ';
+            errorElement.classList.remove('d-none');
+        }
+    });
     
     // Xử lý hiển thị hình ảnh trong modal
     document.addEventListener('click', function(e) {
@@ -269,7 +485,7 @@
     
     // Hàm xóa chi tiêu
     async function deleteExpense(id) {
-        const response = await fetch(`/expenses/${id}`, {
+        const response = await fetch(`http://localhost:8403/expenses/${id}`, {
             method: 'DELETE'
         });
         
@@ -286,7 +502,7 @@
     async function loadDailyExpensesChart() {
         try {
             console.log('Fetching daily expenses data...');
-            const response = await fetch('/daily-expenses');
+            const response = await fetch('http://localhost:8403/daily-expenses');
             console.log('Response status:', response.status);
             const responseText = await response.text();
             console.log('Response text:', responseText);

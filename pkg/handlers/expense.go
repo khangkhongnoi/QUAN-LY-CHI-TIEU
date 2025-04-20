@@ -85,7 +85,7 @@ func AddExpense(c *gin.Context) {
 		}
 
 		// Nếu lưu file thất bại, thử lưu dưới dạng base64
-		if err != nil {
+		if err == nil {
 			// Đọc lại file từ đầu
 			file.Seek(0, 0)
 
@@ -153,6 +153,48 @@ func GetCategories(c *gin.Context) {
 	database.DB.Find(&categories)
 	c.JSON(http.StatusOK, categories)
 }
+
+// AddCategory xử lý việc thêm danh mục mới
+func AddCategory(c *gin.Context) {
+	var request struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Kiểm tra tên danh mục không được để trống
+	if request.Name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tên danh mục không được để trống"})
+		return
+	}
+
+	// Tạo danh mục mới
+	newCategory := models.Category{Name: request.Name}
+
+	// Kiểm tra xem danh mục đã tồn tại chưa
+	var existingCategory models.Category
+	result := database.DB.Where("name = ?", request.Name).First(&existingCategory)
+
+	if result.RowsAffected > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Danh mục này đã tồn tại"})
+		return
+	}
+
+	// Lưu danh mục mới vào database
+	result = database.DB.Create(&newCategory)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Thêm danh mục thành công",
+		"category": newCategory,
+	})
+}
 func DeleteExpense(c *gin.Context) {
 	id := c.Param("id")
 
@@ -182,46 +224,46 @@ func DeleteExpense(c *gin.Context) {
 // GetDailyExpenses trả về chi tiêu theo ngày trong tháng hiện tại
 func GetDailyExpenses(c *gin.Context) {
 	now := time.Now()
-	
+
 	// Lấy ngày đầu tiên của tháng
 	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	
+
 	// Lấy ngày đầu tiên của tháng tiếp theo
 	firstOfNextMonth := firstOfMonth.AddDate(0, 1, 0)
-	
+
 	// Số ngày trong tháng
 	daysInMonth := firstOfNextMonth.Add(-time.Hour).Day()
-	
+
 	// Tạo mảng kết quả với số ngày trong tháng
 	result := make([]int, daysInMonth)
-	
+
 	// Truy vấn tổng chi tiêu theo ngày
 	type DailySum struct {
 		Day   int
 		Total int
 	}
-	
+
 	var dailySums []DailySum
-	
+
 	// Truy vấn SQL để lấy tổng chi tiêu theo ngày
 	database.DB.Model(&models.Expense{}).
 		Select("EXTRACT(DAY FROM created_at) as day, COALESCE(SUM(amount), 0) as total").
 		Where("created_at >= ? AND created_at < ?", firstOfMonth, firstOfNextMonth).
 		Group("EXTRACT(DAY FROM created_at)").
 		Scan(&dailySums)
-	
+
 	// Khởi tạo mảng kết quả với giá trị 0
 	for i := range result {
 		result[i] = 0
 	}
-	
+
 	// Điền dữ liệu vào mảng kết quả
 	for _, sum := range dailySums {
 		if sum.Day >= 1 && sum.Day <= daysInMonth {
 			result[sum.Day-1] = sum.Total
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"data": result,
 		"days": daysInMonth,
