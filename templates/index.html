@@ -22,7 +22,11 @@
             margin-top: 38px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        
+        @media (max-width: 768px) {
+            #searchResults {
+                width: calc(100% - 2rem); /* Chiếm toàn bộ chiều rộng trừ 2rem */
+            }
+        }
         .category-result {
             cursor: pointer;
         }
