@@ -22,7 +22,11 @@
             margin-top: 38px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        
+        @media (max-width: 768px) {
+            #searchResults {
+                width: calc(100% - 2rem); /* Chiếm toàn bộ chiều rộng trừ 2rem */
+            }
+        }
         .category-result {
             cursor: pointer;
         }
@@ -46,7 +50,7 @@
     <div class="card shadow mb-3">
         <div class="card-body">
             <form id="expenseForm" class="row g-2">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-2">
                         <input type="text" class="form-control" id="categorySearch" placeholder="Tìm kiếm danh mục...">
                     </div>
@@ -66,15 +70,22 @@
                     </div>
                 </div>
 
-                <div class="col-12 col-md-6" id="newCategorySection" style="display: none;">
+                <div class="col-12 col-md-4" id="newCategorySection" style="display: none;">
                     <input type="text" class="form-control" name="new_category"
                            placeholder="Tên danh mục mới">
                 </div>
 
-                <div class="col-12 col-md-6">
-                    <input type="text" id="amount" class="form-control" name="amount"
-                           placeholder="Số tiền (VND)" required>
-                </div>
+
+                   <div class="col-12 col-md-6">
+                       <input type="text" id="amount" class="form-control" name="amount"
+                              placeholder="Số tiền (VND)" required>
+                   </div>
+
+                   <div class="col-12 col-md-6">
+                       <label for="expense_date" class="form-label">Ngày chi tiêu</label>
+                       <input type="date" id="expense_date" class="form-control" name="expense_date">
+                   </div>
+
 
                 <div class="col-12">
                         <textarea class="form-control" name="note"
@@ -101,7 +112,7 @@
         <div class="col-12 col-md-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Hôm nay</h5>
+                    <h5 class="card-title">Chi tiêu hôm nay</h5>
                     <h2 id="dailyTotal" class="text-primary">0 VND</h2>
                 </div>
             </div>
@@ -110,7 +121,7 @@
         <div class="col-12 col-md-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Tháng này</h5>
+                    <h5 class="card-title">Chi tiêu tháng này</h5>
                     <h2 id="monthlyTotal" class="text-success">0 VND</h2>
                 </div>
             </div>
@@ -120,7 +131,7 @@
     <!-- Biểu đồ chi tiêu theo ngày -->
     <div class="card shadow mb-3">
         <div class="card-body">
-            <h5 class="card-title">Chi tiêu theo ngày trong tháng</h5>
+            <h5 class="card-title">Chi tiêu theo ngày chi tiêu trong tháng</h5>
             <div class="chart-container" style="position: relative; height:300px;">
                 <canvas id="dailyExpensesChart"></canvas>
             </div>
@@ -137,7 +148,8 @@
                     <tr>
                         <th>Danh mục</th>
                         <th>Số tiền</th>
-                        <th>Thời gian</th>
+                        <th>Ngày chi tiêu</th>
+                        <th>Thời gian tạo</th>
                         <th>Hình ảnh</th>
                         <th>Ghi chú</th>
                         <th>Thao tác</th>
@@ -214,6 +226,11 @@
         loadCategories();
         loadData();
         loadDailyExpensesChart();
+        
+        // Thiết lập ngày mặc định cho trường ngày chi tiêu là ngày hiện tại
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        document.getElementById('expense_date').value = formattedDate;
     });
 
     // Xử lý form
@@ -269,13 +286,18 @@
                         <tr>
                             <td>${expense.Category.Name}</td>
                             <td class="text-nowrap">${expense.Amount.toLocaleString()} VND</td>
-                           <td>${new Date(expense.CreatedAt).toLocaleString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                })}</td>
+                            <td>${new Date(expense.ExpenseDate).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            })}</td>
+                            <td>${new Date(expense.CreatedAt).toLocaleString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            })}</td>
                             <td>
                                 ${expense.ImageData ? 
                                     `<a href="#" class="image-preview" data-image="${expense.ImageData}">
@@ -287,7 +309,7 @@
                                          </a>` : 
                                         'Không có')}
                             </td>
-                               <td>${expense.Note}</td>
+                            <td>${expense.Note}</td>
                             <td>
                                 <button class="btn btn-sm btn-danger delete-btn" data-id="${expense.ID}">
                                     Xóa
@@ -575,7 +597,7 @@
                         },
                         title: {
                             display: true,
-                            text: `Chi tiêu tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`
+                            text: `Chi tiêu theo ngày chi tiêu - Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`
                         }
                     }
                 }
