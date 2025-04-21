@@ -303,9 +303,15 @@
         if(response.redirected) {
             loadData();
             loadDailyExpensesChart(); // Cập nhật lại biểu đồ
-            // Không reset form để giữ nguyên giá trị vừa nhập
-            // Chỉ reset trường hình ảnh để tránh upload lại
-            document.getElementById('image').value = '';
+            
+            // Lưu lại giá trị ngày chi tiêu
+            const expenseDateValue = document.getElementById('expense_date').value;
+            
+            // Reset form
+            e.target.reset();
+            
+            // Khôi phục lại giá trị ngày chi tiêu
+            document.getElementById('expense_date').value = expenseDateValue;
         }
     });
 
