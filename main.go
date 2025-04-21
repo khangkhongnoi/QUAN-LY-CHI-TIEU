@@ -3,6 +3,8 @@ package main
 import (
 	"QUAN-LY-CHI-TIEU/pkg/database"
 	"QUAN-LY-CHI-TIEU/pkg/handlers"
+	"QUAN-LY-CHI-TIEU/pkg/middleware"
+	"QUAN-LY-CHI-TIEU/pkg/models"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,6 +35,10 @@ func main() {
 
 	// Kết nối PostgreSQL
 	database.InitDB(dbURL)
+
+	// Cập nhật auto migrate để thêm model User
+	database.DB.AutoMigrate(&models.User{})
+
 	// Khởi tạo router
 	router := gin.Default()
 
@@ -49,21 +55,32 @@ func main() {
 	router.Static("/static", "./static")
 	router.LoadHTMLGlob("templates/*.html")
 
-	// Routes
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
-	})
-	router.POST("/add", handlers.AddExpense)
-	router.GET("/summary", handlers.GetSummary)
-	router.GET("/expenses", handlers.GetExpenses)
-	router.GET("/categories", handlers.GetCategories)
-	router.POST("/categories", handlers.AddCategory)
-	router.GET("/daily-expenses", handlers.GetDailyExpenses)
-	router.DELETE("/expenses/:id", handlers.DeleteExpense)
+	// Routes công khai
+	router.GET("/login", handlers.ShowLoginPage)
+	router.POST("/login", handlers.Login)
+	router.GET("/register", handlers.ShowRegisterPage)
+	router.POST("/register", handlers.Register)
+	router.GET("/logout", handlers.Logout)
+
+	// Routes yêu cầu xác thực
+	authorized := router.Group("/")
+	authorized.Use(middleware.AuthRequired())
+	{
+		authorized.GET("/", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "index.html", nil)
+		})
+		authorized.POST("/add", handlers.AddExpense)
+		authorized.GET("/summary", handlers.GetSummary)
+		authorized.GET("/expenses", handlers.GetExpenses)
+		authorized.GET("/categories", handlers.GetCategories)
+		authorized.POST("/categories", handlers.AddCategory)
+		authorized.GET("/daily-expenses", handlers.GetDailyExpenses)
+		authorized.DELETE("/expenses/:id", handlers.DeleteExpense)
+	}
 
 	// Khởi chạy server
-	log.Println("Server running on :8403")
-	router.Run(":8403")
+	log.Println("Server running on :80")
+	router.Run(":80")
 }
 
 // Hàm đọc biến môi trường, nếu không có thì dùng giá trị mặc định

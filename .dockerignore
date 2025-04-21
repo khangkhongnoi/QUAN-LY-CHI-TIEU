@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+QUAN-LY-CHI-TIEU
+
+# Uploaded files (sẽ được mount từ host)
+static/uploads/*
+
+# IDE files
+.idea
+.vscode
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Build files
+bin/
+build/

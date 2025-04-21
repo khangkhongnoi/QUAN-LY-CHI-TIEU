@@ -15,6 +15,13 @@ import (
 )
 
 func AddExpense(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	var request struct {
 		CategoryID  string `form:"category_id" binding:"required"`
 		NewCategory string `form:"new_category"`
@@ -54,6 +61,7 @@ func AddExpense(c *gin.Context) {
 	// Tạo expense
 	expense := models.Expense{
 		CategoryID: uint(categoryID),
+		UserID:     userID.(uint), // Thêm user_id vào expense
 		Amount:     amount,
 		Note:       request.Note,
 	}
@@ -62,6 +70,18 @@ func AddExpense(c *gin.Context) {
 	file, header, err := c.Request.FormFile("image")
 	if err == nil {
 		defer file.Close()
+
+		// Đọc nội dung file để lưu dưới dạng base64 (luôn lưu để dự phòng)
+		fileBytes, err := io.ReadAll(file)
+		if err == nil {
+			// Mã hóa base64
+			contentType := http.DetectContentType(fileBytes)
+			base64Data := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(fileBytes))
+			expense.ImageData = base64Data
+		}
+
+		// Reset con trỏ file để có thể đọc lại từ đầu
+		file.Seek(0, 0)
 
 		// Tạo thư mục uploads nếu chưa tồn tại
 		uploadsDir := "./static/uploads"
@@ -83,23 +103,6 @@ func AddExpense(c *gin.Context) {
 				expense.ImagePath = "/static/uploads/" + filename
 			}
 		}
-
-		// Nếu lưu file thất bại, thử lưu dưới dạng base64
-		if err == nil {
-			// Đọc lại file từ đầu
-			file.Seek(0, 0)
-
-			// Đọc nội dung file
-			fileBytes, err := io.ReadAll(file)
-			if err == nil {
-				// Mã hóa base64
-				contentType := http.DetectContentType(fileBytes)
-				base64Data := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(fileBytes))
-
-				// Lưu dữ liệu base64
-				expense.ImageData = base64Data
-			}
-		}
 	}
 
 	result := database.DB.Create(&expense)
@@ -112,6 +115,13 @@ func AddExpense(c *gin.Context) {
 }
 
 func GetSummary(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	var (
 		dailyTotal   int
 		monthlyTotal int
@@ -120,16 +130,17 @@ func GetSummary(c *gin.Context) {
 	now := time.Now()
 
 	// Tính tổng ngày
-	database.DB.Model(&models.Expense{}).
-		Where("DATE(created_at) = ?", now.Format("2006-01-02")).
+	database.DB.Table("expenses").
+		Where("DATE(created_at) = ? AND user_id = ? AND deleted_at IS NULL", now.Format("2006-01-02"), userID).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dailyTotal)
 
 	// Tính tổng tháng
 	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
-	database.DB.Model(&models.Expense{}).
-		Where("created_at >= ? AND created_at < ?", firstOfMonth, firstOfMonth.AddDate(0, 1, 0)).
+	database.DB.Table("expenses").
+		Where("created_at >= ? AND created_at < ? AND user_id = ? AND deleted_at IS NULL", 
+			firstOfMonth, firstOfMonth.AddDate(0, 1, 0), userID).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&monthlyTotal)
 
@@ -140,8 +151,16 @@ func GetSummary(c *gin.Context) {
 }
 
 func GetExpenses(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	var expenses []models.Expense
 	database.DB.Preload("Category").
+		Where("user_id = ? AND deleted_at IS NULL", userID).
 		Order("created_at DESC").
 		Find(&expenses)
 
@@ -196,6 +215,13 @@ func AddCategory(c *gin.Context) {
 	})
 }
 func DeleteExpense(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	id := c.Param("id")
 
 	// Kiểm tra ID hợp lệ
@@ -205,16 +231,17 @@ func DeleteExpense(c *gin.Context) {
 		return
 	}
 
-	// Thực hiện xóa
-	result := database.DB.Delete(&models.Expense{}, expenseID)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	// Kiểm tra chi tiêu thuộc về người dùng hiện tại
+	var expense models.Expense
+	if err := database.DB.Where("id = ? AND user_id = ?", expenseID, userID).First(&expense).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy chi tiêu hoặc bạn không có quyền xóa"})
 		return
 	}
 
-	// Kiểm tra có bản ghi nào bị xóa không
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy chi tiêu"})
+	// Thực hiện xóa
+	result := database.DB.Delete(&expense)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
@@ -223,6 +250,13 @@ func DeleteExpense(c *gin.Context) {
 
 // GetDailyExpenses trả về chi tiêu theo ngày trong tháng hiện tại
 func GetDailyExpenses(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	now := time.Now()
 
 	// Lấy ngày đầu tiên của tháng
@@ -246,9 +280,10 @@ func GetDailyExpenses(c *gin.Context) {
 	var dailySums []DailySum
 
 	// Truy vấn SQL để lấy tổng chi tiêu theo ngày
-	database.DB.Model(&models.Expense{}).
+	database.DB.Table("expenses").
 		Select("EXTRACT(DAY FROM created_at) as day, COALESCE(SUM(amount), 0) as total").
-		Where("created_at >= ? AND created_at < ?", firstOfMonth, firstOfNextMonth).
+		Where("created_at >= ? AND created_at < ? AND user_id = ? AND deleted_at IS NULL", 
+			firstOfMonth, firstOfNextMonth, userID).
 		Group("EXTRACT(DAY FROM created_at)").
 		Scan(&dailySums)
 

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: expense-tracker-app
+    ports:
+      - "80:80"
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=khangttcnpm2024
+      - DB_NAME=expense_tracker
+      - DB_PORT=5432
+    volumes:
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - expense-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: expense-tracker-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=khangttcnpm2024
+      - POSTGRES_DB=expense_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - expense-network
+    restart: unless-stopped
+
+networks:
+  expense-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

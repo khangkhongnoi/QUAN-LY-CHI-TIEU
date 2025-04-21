@@ -18,6 +18,7 @@ func InitDB(dsn string) {
 	}
 
 	autoMigrate()
+	RunMigrations() // Chạy các migration tùy chỉnh
 	seedCategories()
 }
 
@@ -25,6 +26,8 @@ func autoMigrate() {
 	DB.AutoMigrate(
 		&models.Category{},
 		&models.Expense{},
+		&models.User{},
+		&models.User{},
 	)
 }
 

@@ -34,6 +34,14 @@
 </head>
 <body class="bg-light">
 <div class="container py-3">
+    <!-- Header với nút đăng xuất -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Quản Lý Chi Tiêu</h2>
+        <a href="/logout" class="btn btn-outline-danger">
+            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+        </a>
+    </div>
+    
     <!-- Form thêm chi tiêu -->
     <div class="card shadow mb-3">
         <div class="card-body">
@@ -233,7 +241,7 @@
         // Cập nhật lại giá trị vào FormData
         formData.set('amount', soTien);
         // Sử dụng FormData trực tiếp để hỗ trợ upload file
-        const response = await fetch('http://localhost:8403/add', {
+        const response = await fetch('/add', {
             method: 'POST',
             body: formData
         });
@@ -248,14 +256,14 @@
     // Load dữ liệu
     async function loadData() {
         await Promise.all([
-            fetch('http://localhost:8403/summary').then(res => res.json()).then(data => {
+            fetch('/summary').then(res => res.json()).then(data => {
                 document.getElementById('dailyTotal').textContent =
                     `${data.daily.toLocaleString()} VND`;
                 document.getElementById('monthlyTotal').textContent =
                     `${data.monthly.toLocaleString()} VND`;
             }),
 
-            fetch('http://localhost:8403/expenses').then(res => res.json()).then(expenses => {
+            fetch('/expenses').then(res => res.json()).then(expenses => {
                 const tbody = document.getElementById('expensesList');
                 tbody.innerHTML = expenses.map(expense => `
                         <tr>
@@ -296,7 +304,7 @@
     
     // Load categories
     async function loadCategories() {
-        const response = await fetch('http://localhost:8403/categories');
+        const response = await fetch('/categories');
         const categories = await response.json();
         
         // Lưu danh sách danh mục để sử dụng cho tìm kiếm
@@ -413,7 +421,7 @@
         }
         
         try {
-            const response = await fetch('http://localhost:8403/categories', {
+            const response = await fetch('/categories', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -485,7 +493,7 @@
     
     // Hàm xóa chi tiêu
     async function deleteExpense(id) {
-        const response = await fetch(`http://localhost:8403/expenses/${id}`, {
+        const response = await fetch(`/expenses/${id}`, {
             method: 'DELETE'
         });
         
@@ -502,7 +510,7 @@
     async function loadDailyExpensesChart() {
         try {
             console.log('Fetching daily expenses data...');
-            const response = await fetch('http://localhost:8403/daily-expenses');
+            const response = await fetch('/daily-expenses');
             console.log('Response status:', response.status);
             const responseText = await response.text();
             console.log('Response text:', responseText);
