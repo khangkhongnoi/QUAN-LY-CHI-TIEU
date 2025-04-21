@@ -266,16 +266,21 @@
         }
 
         // Kiểm tra ngày chi tiêu
-        const expenseDate = new Date(document.getElementById('expense_date').value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time part for comparison
+        const expenseDateValue = document.getElementById('expense_date').value;
+        const expenseDate = new Date(expenseDateValue);
         
         if(isNaN(expenseDate.getTime())) {
             alert("Ngày chi tiêu không hợp lệ.");
             return;
         }
         
-        if(expenseDate > today) {
+        // So sánh ngày theo định dạng YYYY-MM-DD để tránh vấn đề về giờ
+        const today = new Date();
+        const expenseDateStr = expenseDate.toISOString().split('T')[0];
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // Chỉ hiển thị cảnh báo nếu ngày chi tiêu lớn hơn ngày hiện tại
+        if(expenseDateStr > todayStr) {
             if(!confirm("Ngày chi tiêu là ngày trong tương lai. Bạn có chắc chắn muốn tiếp tục?")) {
                 return;
             }
