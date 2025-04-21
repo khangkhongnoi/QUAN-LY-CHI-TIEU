@@ -34,6 +34,26 @@
         .category-result:hover {
             background-color: #f8f9fa;
         }
+        
+        /* Cho phép kéo ngang trên thiết bị di động */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+            }
+            
+            /* Đảm bảo bảng có thể kéo ngang */
+            .table {
+                min-width: 600px;
+            }
+            
+            /* Cho phép kéo ngang biểu đồ */
+            .chart-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -52,14 +72,14 @@
             <form id="expenseForm" class="row g-2">
                 <div class="col-12 col-md-4">
                     <div class="mb-2">
-                        <input type="text" class="form-control" id="categorySearch" placeholder="Tìm kiếm danh mục...">
+                        <input type="text" class="form-control border-primary" id="categorySearch" placeholder="Tìm kiếm danh mục...">
                     </div>
                     <div class="input-group">
-                        <select class="form-select" id="category" name="category_id" required>
+                        <select class="form-select border-primary" id="category" name="category_id" required>
                             <option value="">Chọn danh mục</option>
                             <!-- Categories sẽ được thêm bằng JS -->
                         </select>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                        <button type="button" class="btn btn-outline-secondary " data-bs-toggle="modal" data-bs-target="#categoryModal">
                             <i class="bi bi-plus"></i> Tạo mới
                         </button>
                     </div>
@@ -77,12 +97,12 @@
 
 
                    <div class="col-12 col-md-6">
-                       <input type="text" id="amount" class="form-control" name="amount"
+                       <input type="text" id="amount" class="form-control border-primary" name="amount"
                               placeholder="Số tiền (VND)" required>
                    </div>
 
                    <div class="col-12 col-md-6">
-                       <label for="expense_date" class="form-label">Ngày chi tiêu</label>
+                       <label for="expense_date" class="form-label text-primary">Ngày chi tiêu</label>
                        <input type="date" id="expense_date" class="form-control" name="expense_date">
                    </div>
 
@@ -132,8 +152,10 @@
     <div class="card shadow mb-3">
         <div class="card-body">
             <h5 class="card-title">Chi tiêu theo ngày chi tiêu trong tháng</h5>
-            <div class="chart-container" style="position: relative; height:300px;">
-                <canvas id="dailyExpensesChart"></canvas>
+            <div class="chart-container" style="position: relative; height:300px; width:100%; overflow-x: auto; overflow-y: hidden">
+                <div style="min-width: 800px; height: 100%">
+                    <canvas id="dailyExpensesChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -243,7 +265,22 @@
             return;
         }
 
-        console.log(document.getElementById('amount').value)
+        // Kiểm tra ngày chi tiêu
+        const expenseDate = new Date(document.getElementById('expense_date').value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time part for comparison
+        
+        if(isNaN(expenseDate.getTime())) {
+            alert("Ngày chi tiêu không hợp lệ.");
+            return;
+        }
+        
+        if(expenseDate > today) {
+            if(!confirm("Ngày chi tiêu là ngày trong tương lai. Bạn có chắc chắn muốn tiếp tục?")) {
+                return;
+            }
+        }
+
         const soTien = document.getElementById('amount').value.replaceAll(',','');
 
         if(soTien <= 0)
@@ -266,7 +303,9 @@
         if(response.redirected) {
             loadData();
             loadDailyExpensesChart(); // Cập nhật lại biểu đồ
-            e.target.reset();
+            // Không reset form để giữ nguyên giá trị vừa nhập
+            // Chỉ reset trường hình ảnh để tránh upload lại
+            document.getElementById('image').value = '';
         }
     });
 
