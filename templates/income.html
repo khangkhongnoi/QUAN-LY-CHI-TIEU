@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Chi Tiêu</title>
+    <title>Quản Lý Thu Nhập</title>
     <link rel="icon" type="image/png" href="../static/images/good-icon.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
@@ -24,7 +24,7 @@
         }
         @media (max-width: 768px) {
             #searchResults {
-                width: calc(100% - 2rem); /* Chiếm toàn bộ chiều rộng trừ 2rem */
+                width: calc(100% - 2rem);
             }
         }
         .category-result {
@@ -60,22 +60,27 @@
 <div class="container py-3">
     <!-- Header với menu điều hướng -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Quản Lý Chi Tiêu</h2>
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0 d-none d-md-block">Quản Lý Thu Nhập</h2>
+            <h5 class="mb-0 d-md-none">Thu Nhập</h5>
+        </div>
         <div>
-           
+            <a href="/" class="btn btn-outline-primary me-2">
+                <i class="bi bi-house"></i> <span class="d-none d-md-inline">Trang chủ</span>
+            </a>
             <a href="/logout" class="btn btn-outline-danger">
                 <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Đăng xuất</span>
             </a>
         </div>
     </div>
-
+    
     <!-- Menu điều hướng -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link active" href="/"><i class="bi bi-cash-coin"></i> Chi Tiêu</a>
+            <a class="nav-link" href="/"><i class="bi bi-cash-coin"></i> Chi Tiêu</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="/income"><i class="bi bi-wallet2"></i> Thu Nhập</a>
+            <a class="nav-link active" href="/income"><i class="bi bi-wallet2"></i> Thu Nhập</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" href="/budget"><i class="bi bi-calculator"></i> Ngân Sách</a>
@@ -88,20 +93,21 @@
         </li>
     </ul>
     
-    <!-- Form thêm chi tiêu -->
+    <!-- Form thêm thu nhập -->
     <div class="card shadow mb-3">
         <div class="card-body">
-            <form id="expenseForm" class="row g-2">
+            <h5 class="card-title mb-3">Thêm Khoản Thu Nhập</h5>
+            <form id="incomeForm" class="row g-2">
                 <div class="col-12 col-md-4">
                     <div class="mb-2">
-                        <input type="text" class="form-control border-primary" id="categorySearch" placeholder="Tìm kiếm danh mục...">
+                        <input type="text" class="form-control border-success" id="categorySearch" placeholder="Tìm kiếm danh mục...">
                     </div>
                     <div class="input-group">
-                        <select class="form-select border-primary" id="category" name="category_id" required>
+                        <select class="form-select border-success" id="incomeCategory" name="income_category_id" required>
                             <option value="">Chọn danh mục</option>
                             <!-- Categories sẽ được thêm bằng JS -->
                         </select>
-                        <button type="button" class="btn btn-outline-secondary " data-bs-toggle="modal" data-bs-target="#categoryModal">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal">
                             <i class="bi bi-plus"></i> Tạo mới
                         </button>
                     </div>
@@ -113,36 +119,28 @@
                 </div>
 
                 <div class="col-12 col-md-4" id="newCategorySection" style="display: none;">
-                    <input type="text" class="form-control" name="new_category"
+                    <input type="text" class="form-control" name="new_income_category"
                            placeholder="Tên danh mục mới">
                 </div>
 
+                <div class="col-12 col-md-6">
+                    <input type="text" id="incomeAmount" class="form-control border-success" name="income_amount"
+                           placeholder="Số tiền (VND)" required>
+                </div>
 
-                   <div class="col-12 col-md-6">
-                       <input type="text" id="amount" class="form-control border-primary" name="amount"
-                              placeholder="Số tiền (VND)" required>
-                   </div>
-
-                   <div class="col-12 col-md-6">
-                       <label for="expense_date" class="form-label text-primary">Ngày chi tiêu</label>
-                       <input type="date" id="expense_date" class="form-control" name="expense_date">
-                   </div>
-
+                <div class="col-12 col-md-6">
+                    <label for="income_date" class="form-label text-success">Ngày nhận thu nhập</label>
+                    <input type="date" id="income_date" class="form-control" name="income_date">
+                </div>
 
                 <div class="col-12">
-                        <textarea class="form-control" name="note"
-                                  placeholder="Ghi chú (tuỳ chọn)" rows="2"></textarea>
-                </div>
-                
-                <div class="col-12 mt-2">
-                    <label for="image" class="form-label">Hình ảnh (tuỳ chọn)</label>
-                    <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                    <div class="form-text">Tải lên hình ảnh hóa đơn hoặc chi tiêu</div>
+                    <textarea class="form-control" name="income_note"
+                              placeholder="Ghi chú (tuỳ chọn)" rows="2"></textarea>
                 </div>
 
                 <div class="col-12 mt-3">
-                    <button type="submit" class="btn btn-primary w-100">
-                        Thêm chi tiêu
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus-circle"></i> Thêm thu nhập
                     </button>
                 </div>
             </form>
@@ -151,85 +149,66 @@
 
     <!-- Thống kê -->
     <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
             <div class="card shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Chi tiêu hôm nay</h5>
-                    <h2 id="dailyTotal" class="text-primary">0 VND</h2>
+                    <h5 class="card-title">Thu nhập hôm nay</h5>
+                    <h2 id="dailyTotal" class="text-success">0 VND</h2>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
             <div class="card shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Chi tiêu tháng này</h5>
+                    <h5 class="card-title">Thu nhập tháng này</h5>
                     <h2 id="monthlyTotal" class="text-success">0 VND</h2>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Biểu đồ chi tiêu theo ngày -->
-    <div class="card shadow mb-3">
-        <div class="card-body">
-            <h5 class="card-title">Chi tiêu theo ngày chi tiêu trong tháng</h5>
-            <div class="chart-container" style="position: relative; height:300px; width:100%; overflow-x: auto; overflow-y: hidden">
-                <div style="min-width: 800px; height: 100%">
-                    <canvas id="dailyExpensesChart"></canvas>
+        
+        <div class="col-12 col-md-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Thu nhập năm nay</h5>
+                    <h2 id="yearlyTotal" class="text-success">0 VND</h2>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Biểu đồ chi tiêu theo tháng -->
+    <!-- Biểu đồ thu nhập theo tháng -->
     <div class="card shadow mb-3">
         <div class="card-body">
-            <h5 class="card-title">Chi tiêu theo tháng trong năm</h5>
+            <h5 class="card-title">Thu nhập theo tháng trong năm</h5>
             <div class="chart-container" style="position: relative; height:300px; width:100%; overflow-x: auto; overflow-y: hidden">
                 <div style="min-width: 800px; height: 100%">
-                    <canvas id="monthlyExpensesChart"></canvas>
+                    <canvas id="monthlyIncomesChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Lịch sử -->
+    <!-- Lịch sử thu nhập -->
     <div class="card shadow">
         <div class="card-body">
-            <h5 class="card-title mb-3">Lịch sử chi tiêu</h5>
+            <h5 class="card-title mb-3">Lịch sử thu nhập</h5>
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-hover">
                     <thead>
                     <tr>
                         <th>Danh mục</th>
                         <th>Số tiền</th>
-                        <th>Ngày chi tiêu</th>
+                        <th>Ngày nhận</th>
                         <th>Thời gian tạo</th>
-                        <th>Hình ảnh</th>
                         <th>Ghi chú</th>
                         <th>Thao tác</th>
                     </tr>
                     </thead>
-                    <tbody id="expensesList">
+                    <tbody id="incomesList">
                     <!-- Dữ liệu sẽ được thêm bằng JS -->
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal hiển thị hình ảnh -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Hình ảnh chi tiêu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="Hình ảnh chi tiêu" class="img-fluid">
             </div>
         </div>
     </div>
@@ -240,7 +219,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tạo danh mục mới</h5>
+                <h5 class="modal-title">Tạo danh mục thu nhập mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -248,14 +227,14 @@
                     <div class="mb-3">
                         <label for="categoryName" class="form-label">Tên danh mục</label>
                         <input type="text" class="form-control" id="categoryName" required>
-                        <div class="form-text">Nhập tên cho danh mục chi tiêu mới</div>
+                        <div class="form-text">Nhập tên cho danh mục thu nhập mới</div>
                     </div>
                     <div id="categoryError" class="alert alert-danger d-none"></div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" id="saveCategory">Lưu danh mục</button>
+                <button type="button" class="btn btn-success" id="saveCategory">Lưu danh mục</button>
             </div>
         </div>
     </div>
@@ -264,8 +243,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-
-    const input = document.getElementById('amount');
+    const input = document.getElementById('incomeAmount');
 
     input.addEventListener('input', function (e) {
         // Xoá dấu phẩy cũ
@@ -277,127 +255,125 @@
         // Format lại số có dấu phẩy
         e.target.value = Number(value).toLocaleString('en-US');
     });
+    
     // Khởi tạo
     document.addEventListener('DOMContentLoaded', () => {
-        loadCategories();
-        loadData();
-        loadDailyExpensesChart();
-        loadMonthlyExpensesChart();
+        loadIncomeCategories();
+        loadIncomeData();
+        loadMonthlyIncomesChart();
         
-        // Thiết lập ngày mặc định cho trường ngày chi tiêu là ngày hiện tại
+        // Thiết lập ngày mặc định cho trường ngày thu nhập là ngày hiện tại
         const today = new Date();
         const formattedDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
-        document.getElementById('expense_date').value = formattedDate;
+        document.getElementById('income_date').value = formattedDate;
     });
 
-    // Xử lý form
-    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+    // Xử lý form thêm thu nhập
+    document.getElementById('incomeForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Kiểm tra xem đã chọn danh mục hay chưa
-        if(!document.getElementById('category').value && !document.querySelector('[name=new_category]').value){
+        if(!document.getElementById('incomeCategory').value && !document.querySelector('[name=new_income_category]').value){
             alert("Vui lòng chọn một danh mục.");
             return;
         }
 
-        // Kiểm tra ngày chi tiêu
-        const expenseDateValue = document.getElementById('expense_date').value;
-        const expenseDate = new Date(expenseDateValue);
+        // Kiểm tra ngày thu nhập
+        const incomeDateValue = document.getElementById('income_date').value;
+        const incomeDate = new Date(incomeDateValue);
         
-        if(isNaN(expenseDate.getTime())) {
-            alert("Ngày chi tiêu không hợp lệ.");
+        if(isNaN(incomeDate.getTime())) {
+            alert("Ngày thu nhập không hợp lệ.");
             return;
         }
         
         // So sánh ngày theo định dạng YYYY-MM-DD để tránh vấn đề về giờ
         const today = new Date();
-        const expenseDateStr = expenseDate.toISOString().split('T')[0];
+        const incomeDateStr = incomeDate.toISOString().split('T')[0];
         const todayStr = today.toISOString().split('T')[0];
         
-        // Chỉ hiển thị cảnh báo nếu ngày chi tiêu lớn hơn ngày hiện tại
-        if(expenseDateStr > todayStr) {
-            if(!confirm("Ngày chi tiêu là ngày trong tương lai. Bạn có chắc chắn muốn tiếp tục?")) {
+        // Chỉ hiển thị cảnh báo nếu ngày thu nhập lớn hơn ngày hiện tại
+        if(incomeDateStr > todayStr) {
+            if(!confirm("Ngày thu nhập là ngày trong tương lai. Bạn có chắc chắn muốn tiếp tục?")) {
                 return;
             }
         }
 
-        const soTien = document.getElementById('amount').value.replaceAll(',','');
+        const soTien = document.getElementById('incomeAmount').value.replaceAll(',','');
 
-        if(soTien <= 0)
-        {
+        if(soTien <= 0) {
             alert("Số tiền không hợp lệ");
             return;
         }
 
-
         const formData = new FormData(e.target);
 
         // Cập nhật lại giá trị vào FormData
-        formData.set('amount', soTien);
-        // Sử dụng FormData trực tiếp để hỗ trợ upload file
-        const response = await fetch('/add', {
+        formData.set('income_amount', soTien);
+        
+        // Gửi request
+        const response = await fetch('/income/add', {
             method: 'POST',
             body: formData
         });
 
         if(response.redirected) {
-            loadData();
-            loadDailyExpensesChart(); // Cập nhật lại biểu đồ ngày
-            loadMonthlyExpensesChart(); // Cập nhật lại biểu đồ tháng
-            
-            // Lưu lại giá trị ngày chi tiêu
-            const expenseDateValue = document.getElementById('expense_date').value;
-            
-            // Reset form
-            e.target.reset();
-            
-            // Khôi phục lại giá trị ngày chi tiêu
-            document.getElementById('expense_date').value = expenseDateValue;
+            window.location.href = response.url;
+        } else {
+            const result = await response.json();
+            if (response.ok) {
+                loadIncomeData();
+                loadMonthlyIncomesChart();
+                
+                // Lưu lại giá trị ngày thu nhập
+                const incomeDateValue = document.getElementById('income_date').value;
+                
+                // Reset form
+                e.target.reset();
+                
+                // Khôi phục lại giá trị ngày thu nhập
+                document.getElementById('income_date').value = incomeDateValue;
+                
+                alert("Thêm thu nhập thành công!");
+            } else {
+                alert(result.error || "Có lỗi xảy ra khi thêm thu nhập");
+            }
         }
     });
 
-    // Load dữ liệu
-    async function loadData() {
+    // Load dữ liệu thu nhập
+    async function loadIncomeData() {
         await Promise.all([
-            fetch('/summary').then(res => res.json()).then(data => {
+            fetch('/income/summary').then(res => res.json()).then(data => {
                 document.getElementById('dailyTotal').textContent =
                     `${data.daily.toLocaleString()} VND`;
                 document.getElementById('monthlyTotal').textContent =
                     `${data.monthly.toLocaleString()} VND`;
+                document.getElementById('yearlyTotal').textContent =
+                    `${data.yearly.toLocaleString()} VND`;
             }),
 
-            fetch('/expenses').then(res => res.json()).then(expenses => {
-                const tbody = document.getElementById('expensesList');
-                tbody.innerHTML = expenses.map(expense => `
+            fetch('/income/list').then(res => res.json()).then(incomes => {
+                const tbody = document.getElementById('incomesList');
+                tbody.innerHTML = incomes.map(income => `
                         <tr>
-                            <td>${expense.Category.Name}</td>
-                            <td class="text-nowrap">${expense.Amount.toLocaleString()} VND</td>
-                            <td>${new Date(expense.ExpenseDate).toLocaleDateString('vi-VN', {
+                            <td>${income.Category.Name}</td>
+                            <td class="text-nowrap">${income.Amount.toLocaleString()} VND</td>
+                            <td>${new Date(income.IncomeDate).toLocaleDateString('vi-VN', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
                             })}</td>
-                            <td>${new Date(expense.CreatedAt).toLocaleString('vi-VN', {
+                            <td>${new Date(income.CreatedAt).toLocaleString('vi-VN', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
                             })}</td>
+                            <td>${income.Note}</td>
                             <td>
-                                ${expense.ImageData ? 
-                                    `<a href="#" class="image-preview" data-image="${expense.ImageData}">
-                                        <img src="${expense.ImageData}" alt="Hình ảnh" width="50" height="50" class="img-thumbnail">
-                                     </a>` : 
-                                    (expense.ImagePath ? 
-                                        `<a href="${expense.ImagePath}" target="_blank">
-                                            <img src="${expense.ImagePath}" alt="Hình ảnh" width="50" height="50" class="img-thumbnail">
-                                         </a>` : 
-                                        'Không có')}
-                            </td>
-                            <td>${expense.Note}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger delete-btn" data-id="${expense.ID}">
+                                <button class="btn btn-sm btn-danger delete-btn" data-id="${income.ID}">
                                     Xóa
                                 </button>
                             </td>
@@ -408,29 +384,29 @@
     }
 
     // Biến lưu trữ danh sách danh mục
-    let allCategories = [];
+    let allIncomeCategories = [];
     
-    // Load categories
-    async function loadCategories() {
-        const response = await fetch('/categories');
+    // Load danh mục thu nhập
+    async function loadIncomeCategories() {
+        const response = await fetch('/income/categories');
         const categories = await response.json();
         
         // Lưu danh sách danh mục để sử dụng cho tìm kiếm
-        allCategories = categories;
+        allIncomeCategories = categories;
 
-        const select = document.getElementById('category');
+        const select = document.getElementById('incomeCategory');
         select.innerHTML = `
                 <option value="">Chọn danh mục</option>
                 ${categories.map(cat => `
                     <option value="${cat.ID}">${cat.Name}</option>
                 `).join('')}
-
+                <option value="0">Tạo danh mục mới</option>
             `;
 
         // Xử lý hiển thị ô nhập mới
         select.addEventListener('change', () => {
             document.getElementById('newCategorySection').style.display =
-                select.value === '5' ? 'block' : 'none';
+                select.value === '0' ? 'block' : 'none';
         });
     }
     
@@ -449,7 +425,7 @@
         }
         
         // Tìm kiếm danh mục phù hợp
-        const matchedCategories = allCategories.filter(cat => 
+        const matchedCategories = allIncomeCategories.filter(cat => 
             cat.Name.toLowerCase().includes(searchTerm)
         );
         
@@ -471,13 +447,16 @@
                     const categoryName = this.dataset.name;
                     
                     // Chọn danh mục trong dropdown
-                    document.getElementById('category').value = categoryId;
+                    document.getElementById('incomeCategory').value = categoryId;
                     
                     // Cập nhật ô tìm kiếm
                     document.getElementById('categorySearch').value = categoryName;
                     
                     // Ẩn kết quả
                     resultsContainer.classList.add('d-none');
+                    
+                    // Ẩn ô nhập danh mục mới
+                    document.getElementById('newCategorySection').style.display = 'none';
                 });
             });
         } else {
@@ -485,7 +464,7 @@
             resultsList.innerHTML = `
                 <div class="list-group-item">
                     Không tìm thấy danh mục "${searchTerm}"
-                    <button type="button" class="btn btn-sm btn-primary mt-1" id="createNewFromSearch">
+                    <button type="button" class="btn btn-sm btn-success mt-1" id="createNewFromSearch">
                         <i class="bi bi-plus-circle"></i> Tạo mới danh mục này
                     </button>
                 </div>
@@ -529,7 +508,7 @@
         }
         
         try {
-            const response = await fetch('/categories', {
+            const response = await fetch('/income/categories', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -557,19 +536,19 @@
             errorElement.classList.add('d-none');
             
             // Làm mới danh sách danh mục
-            await loadCategories();
+            await loadIncomeCategories();
             
             // Cập nhật ô tìm kiếm với tên danh mục mới
             document.getElementById('categorySearch').value = createdCategoryName;
             
             // Tìm và chọn danh mục mới trong dropdown
-            const newCategory = allCategories.find(cat => cat.Name.toLowerCase() === createdCategoryName.toLowerCase());
+            const newCategory = allIncomeCategories.find(cat => cat.Name.toLowerCase() === createdCategoryName.toLowerCase());
             if (newCategory) {
-                document.getElementById('category').value = newCategory.ID;
+                document.getElementById('incomeCategory').value = newCategory.ID;
             }
             
             // Hiển thị thông báo thành công
-            alert('Tạo danh mục thành công!');
+            alert('Tạo danh mục thu nhập thành công!');
             
         } catch (error) {
             console.error('Error:', error);
@@ -578,132 +557,36 @@
         }
     });
     
-    // Xử lý hiển thị hình ảnh trong modal
+    // Xử lý nút xóa thu nhập
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.image-preview')) {
-            e.preventDefault();
-            const imageData = e.target.closest('.image-preview').dataset.image;
-            const modalImage = document.getElementById('modalImage');
-            modalImage.src = imageData;
-            
-            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-            imageModal.show();
-        }
-        
-        // Xử lý nút xóa
         if (e.target.classList.contains('delete-btn')) {
             const id = e.target.dataset.id;
-            if (confirm('Bạn có chắc muốn xóa chi tiêu này?')) {
-                deleteExpense(id);
+            if (confirm('Bạn có chắc muốn xóa khoản thu nhập này?')) {
+                deleteIncome(id);
             }
         }
     });
     
-    // Hàm xóa chi tiêu
-    async function deleteExpense(id) {
-        const response = await fetch(`/expenses/${id}`, {
+    // Hàm xóa thu nhập
+    async function deleteIncome(id) {
+        const response = await fetch(`/income/${id}`, {
             method: 'DELETE'
         });
         
         const result = await response.json();
         if (response.ok) {
-            loadData();
-            loadDailyExpensesChart(); // Cập nhật lại biểu đồ ngày
-            loadMonthlyExpensesChart(); // Cập nhật lại biểu đồ tháng
+            loadIncomeData();
+            loadMonthlyIncomesChart();
         } else {
             alert(result.error || 'Có lỗi xảy ra khi xóa');
         }
     }
     
-    // Hàm tải và hiển thị biểu đồ chi tiêu theo ngày
-    async function loadDailyExpensesChart() {
+    // Hàm tải và hiển thị biểu đồ thu nhập theo tháng
+    async function loadMonthlyIncomesChart() {
         try {
-            console.log('Fetching daily expenses data...');
-            const response = await fetch('/daily-expenses');
-            console.log('Response status:', response.status);
-            const responseText = await response.text();
-            console.log('Response text:', responseText);
-            const data = JSON.parse(responseText);
-            console.log('Parsed data:', data);
-            
-            // Tạo mảng nhãn cho các ngày trong tháng
-            const days = data.days || 30; // Fallback to 30 days if days is not provided
-            console.log('Days in month:', days);
-            const labels = Array.from({length: days}, (_, i) => `${i + 1}`);
-            
-            // Lấy canvas để vẽ biểu đồ
-            const ctx = document.getElementById('dailyExpensesChart').getContext('2d');
-            
-            // Xóa biểu đồ cũ nếu có
-            if (window.expenseChart) {
-                window.expenseChart.destroy();
-            }
-            
-            // Tạo biểu đồ mới
-            window.expenseChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Chi tiêu (VND)',
-                        data: data.data || [],
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toLocaleString() + ' VND';
-                                }
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Ngày trong tháng'
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.parsed.y.toLocaleString() + ' VND';
-                                }
-                            }
-                        },
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: `Chi tiêu theo ngày chi tiêu - Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Lỗi khi tải dữ liệu biểu đồ:', error);
-        }
-    }
-    
-    // Hàm tải và hiển thị biểu đồ chi tiêu theo tháng
-    async function loadMonthlyExpensesChart() {
-        try {
-            console.log('Fetching monthly expenses data...');
-            const response = await fetch('/monthly-expenses');
-            console.log('Response status:', response.status);
-            const responseText = await response.text();
-            console.log('Response text:', responseText);
-            const data = JSON.parse(responseText);
-            console.log('Parsed data:', data);
+            const response = await fetch('/income/monthly');
+            const data = await response.json();
             
             // Tạo mảng nhãn cho các tháng trong năm
             const monthNames = [
@@ -712,23 +595,23 @@
             ];
             
             // Lấy canvas để vẽ biểu đồ
-            const ctx = document.getElementById('monthlyExpensesChart').getContext('2d');
+            const ctx = document.getElementById('monthlyIncomesChart').getContext('2d');
             
             // Xóa biểu đồ cũ nếu có
-            if (window.monthlyChart) {
-                window.monthlyChart.destroy();
+            if (window.incomeChart) {
+                window.incomeChart.destroy();
             }
             
             // Tạo biểu đồ mới
-            window.monthlyChart = new Chart(ctx, {
+            window.incomeChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: monthNames,
                     datasets: [{
-                        label: 'Chi tiêu (VND)',
+                        label: 'Thu nhập (VND)',
                         data: data.data || [],
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.5)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
                         borderWidth: 1
                     }]
                 },
@@ -764,13 +647,13 @@
                         },
                         title: {
                             display: true,
-                            text: `Chi tiêu theo tháng - Năm ${data.year || new Date().getFullYear()}`
+                            text: `Thu nhập theo tháng - Năm ${data.year || new Date().getFullYear()}`
                         }
                     }
                 }
             });
         } catch (error) {
-            console.error('Lỗi khi tải dữ liệu biểu đồ tháng:', error);
+            console.error('Lỗi khi tải dữ liệu biểu đồ thu nhập:', error);
         }
     }
 </script>

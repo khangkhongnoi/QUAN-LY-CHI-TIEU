@@ -36,8 +36,17 @@ func main() {
 	// Kết nối PostgreSQL
 	database.InitDB(dbURL)
 
-	// Cập nhật auto migrate để thêm model User
-	database.DB.AutoMigrate(&models.User{})
+	// Cập nhật auto migrate để thêm các model
+	database.DB.AutoMigrate(
+		&models.User{},
+		&models.Category{},
+		&models.Expense{},
+		&models.IncomeCategory{},
+		&models.Income{},
+		&models.Budget{},
+		&models.SavingGoal{},
+		&models.SavingTransaction{},
+	)
 
 	// Khởi tạo router
 	router := gin.Default()
@@ -66,6 +75,7 @@ func main() {
 	authorized := router.Group("/")
 	authorized.Use(middleware.AuthRequired())
 	{
+		// Trang chủ và chi tiêu
 		authorized.GET("/", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "index.html", nil)
 		})
@@ -77,6 +87,42 @@ func main() {
 		authorized.GET("/daily-expenses", handlers.GetDailyExpenses)
 		authorized.GET("/monthly-expenses", handlers.GetMonthlyExpenses)
 		authorized.DELETE("/expenses/:id", handlers.DeleteExpense)
+		authorized.GET("/expenses/:id", handlers.GetExpenseDetail)
+		authorized.PUT("/expenses/:id", handlers.UpdateExpense)
+		
+		// Quản lý thu nhập
+		authorized.GET("/income", handlers.ShowIncomePage)
+		authorized.POST("/income/add", handlers.AddIncome)
+		authorized.GET("/income/categories", handlers.GetIncomeCategories)
+		authorized.POST("/income/categories", handlers.AddIncomeCategory)
+		authorized.GET("/income/list", handlers.GetIncomes)
+		authorized.DELETE("/income/:id", handlers.DeleteIncome)
+		authorized.GET("/income/summary", handlers.GetIncomeSummary)
+		authorized.GET("/income/monthly", handlers.GetMonthlyIncomes)
+		
+		// Kế hoạch ngân sách
+		authorized.GET("/budget", handlers.ShowBudgetPage)
+		authorized.POST("/budget/add", handlers.AddBudget)
+		authorized.GET("/budget/list", handlers.GetBudgets)
+		authorized.GET("/budget/summary", handlers.GetBudgetSummary)
+		authorized.DELETE("/budget/:id", handlers.DeleteBudget)
+		
+		// Mục tiêu tiết kiệm
+		authorized.GET("/saving", handlers.ShowSavingPage)
+		authorized.POST("/saving/add", handlers.AddSavingGoal)
+		authorized.GET("/saving/list", handlers.GetSavingGoals)
+		authorized.POST("/saving/transaction", handlers.AddSavingTransaction)
+		authorized.GET("/saving/:goal_id/transactions", handlers.GetSavingTransactions)
+		authorized.DELETE("/saving/:id", handlers.DeleteSavingGoal)
+		
+		// Báo cáo và phân tích
+		authorized.GET("/report", handlers.ShowReportPage)
+		authorized.GET("/report/category", handlers.GetCategoryReport)
+		authorized.GET("/report/date-range", handlers.GetExpensesByDateRange)
+		authorized.GET("/report/comparison", handlers.GetIncomeExpenseComparison)
+		
+		// Tổng quan tài chính
+		authorized.GET("/financial-overview", handlers.GetFinancialOverview)
 	}
 
 	// Khởi chạy server

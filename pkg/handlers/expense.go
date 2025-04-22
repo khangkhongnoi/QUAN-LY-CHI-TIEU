@@ -266,6 +266,158 @@ func DeleteExpense(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Xóa thành công"})
 }
 
+// GetExpenseDetail trả về chi tiết của một khoản chi tiêu
+func GetExpenseDetail(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id := c.Param("id")
+
+	// Kiểm tra ID hợp lệ
+	expenseID, err := strconv.Atoi(id)
+	if err != nil || expenseID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID không hợp lệ"})
+		return
+	}
+
+	// Lấy chi tiết chi tiêu
+	var expense models.Expense
+	if err := database.DB.Preload("Category").Where("id = ? AND user_id = ?", expenseID, userID).First(&expense).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy chi tiêu"})
+		return
+	}
+
+	c.JSON(http.StatusOK, expense)
+}
+
+// UpdateExpense xử lý việc cập nhật chi tiêu
+func UpdateExpense(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id := c.Param("id")
+
+	// Kiểm tra ID hợp lệ
+	expenseID, err := strconv.Atoi(id)
+	if err != nil || expenseID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID không hợp lệ"})
+		return
+	}
+
+	// Kiểm tra chi tiêu tồn tại và thuộc về người dùng
+	var expense models.Expense
+	if err := database.DB.Where("id = ? AND user_id = ?", expenseID, userID).First(&expense).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy chi tiêu hoặc bạn không có quyền chỉnh sửa"})
+		return
+	}
+
+	var request struct {
+		CategoryID  string `form:"category_id"`
+		Amount      string `form:"amount"`
+		Note        string `form:"note"`
+		ExpenseDate string `form:"expense_date"`
+	}
+
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Cập nhật danh mục nếu có
+	if request.CategoryID != "" {
+		categoryID, err := strconv.ParseUint(request.CategoryID, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Danh mục không hợp lệ"})
+			return
+		}
+		expense.CategoryID = uint(categoryID)
+	}
+
+	// Cập nhật số tiền nếu có
+	if request.Amount != "" {
+		amount, err := strconv.Atoi(request.Amount)
+		if err != nil || amount <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Số tiền không hợp lệ"})
+			return
+		}
+		expense.Amount = amount
+	}
+
+	// Cập nhật ghi chú
+	if request.Note != "" {
+		expense.Note = request.Note
+	}
+
+	// Cập nhật ngày chi tiêu nếu có
+	if request.ExpenseDate != "" {
+		expenseDate, err := time.Parse("2006-01-02", request.ExpenseDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Ngày chi tiêu không hợp lệ"})
+			return
+		}
+		expense.ExpenseDate = expenseDate
+	}
+
+	// Xử lý file hình ảnh mới nếu có
+	file, header, err := c.Request.FormFile("image")
+	if err == nil {
+		defer file.Close()
+
+		// Đọc nội dung file để lưu dưới dạng base64
+		fileBytes, err := io.ReadAll(file)
+		if err == nil {
+			// Mã hóa base64
+			contentType := http.DetectContentType(fileBytes)
+			base64Data := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(fileBytes))
+			expense.ImageData = base64Data
+		}
+
+		// Reset con trỏ file để có thể đọc lại từ đầu
+		file.Seek(0, 0)
+
+		// Tạo thư mục uploads nếu chưa tồn tại
+		uploadsDir := "./static/uploads"
+		if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
+			os.MkdirAll(uploadsDir, 0755)
+		}
+
+		// Tạo tên file duy nhất
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), header.Filename)
+		filepath := filepath.Join(uploadsDir, filename)
+
+		// Lưu file vào thư mục uploads
+		out, err := os.Create(filepath)
+		if err == nil {
+			defer out.Close()
+			_, err = io.Copy(out, file)
+			if err == nil {
+				// Lưu đường dẫn file
+				expense.ImagePath = "/static/uploads/" + filename
+			}
+		}
+	}
+
+	// Lưu các thay đổi
+	result := database.DB.Save(&expense)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cập nhật chi tiêu thành công",
+		"expense": expense,
+	})
+}
+
 // GetDailyExpenses trả về chi tiêu theo ngày trong tháng hiện tại
 func GetDailyExpenses(c *gin.Context) {
 	// Lấy user_id từ context

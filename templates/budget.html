@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kế Hoạch Ngân Sách</title>
+    <link rel="icon" type="image/png" href="../static/images/good-icon.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @media (max-width: 576px) {
+            .input-group { flex-direction: column; }
+            .input-group select, .input-group input { width: 100%!important; margin: 5px 0; }
+        }
+        
+        /* Cho phép kéo ngang trên thiết bị di động */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+            }
+            
+            /* Đảm bảo bảng có thể kéo ngang */
+            .table {
+                min-width: 600px;
+            }
+        }
+        
+        /* Màu sắc cho thanh tiến trình */
+        .progress-bar-success {
+            background-color: #28a745;
+        }
+        
+        .progress-bar-warning {
+            background-color: #ffc107;
+        }
+        
+        .progress-bar-danger {
+            background-color: #dc3545;
+        }
+        
+        .budget-card {
+            transition: all 0.3s ease;
+        }
+        
+        .budget-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container py-3">
+    <!-- Header với menu điều hướng -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Kế Hoạch Ngân Sách</h2>
+        <div>
+            <a href="/" class="btn btn-outline-primary me-2">
+                <i class="bi bi-house"></i> <span class="d-none d-md-inline">Trang chủ</span>
+            </a>
+            <a href="/logout" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Đăng xuất</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Menu điều hướng -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-cash-coin"></i> Chi Tiêu</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/income"><i class="bi bi-wallet2"></i> Thu Nhập</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="/budget"><i class="bi bi-calculator"></i> Ngân Sách</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/saving"><i class="bi bi-piggy-bank"></i> Tiết Kiệm</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/report"><i class="bi bi-bar-chart"></i> Báo Cáo</a>
+        </li>
+    </ul>
+    
+    <!-- Form tạo kế hoạch ngân sách -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Tạo Kế Hoạch Ngân Sách</h5>
+            <form id="budgetForm" class="row g-3">
+                <div class="col-md-6">
+                    <label for="category" class="form-label">Danh mục chi tiêu</label>
+                    <select class="form-select" id="category" name="category_id" required>
+                        <option value="">Chọn danh mục</option>
+                        <!-- Categories sẽ được thêm bằng JS -->
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="amount" class="form-label">Số tiền dự kiến (VND)</label>
+                    <input type="text" class="form-control" id="amount" name="amount" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="start_date" class="form-label">Ngày bắt đầu</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="end_date" class="form-label">Ngày kết thúc</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                </div>
+                
+                <div class="col-12">
+                    <label for="description" class="form-label">Mô tả kế hoạch</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Tạo kế hoạch ngân sách
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Tổng quan ngân sách hiện tại -->
+    <h4 class="mb-3">Tổng Quan Ngân Sách Hiện Tại</h4>
+    <div id="budgetSummary" class="row g-3 mb-4">
+        <!-- Dữ liệu sẽ được thêm bằng JS -->
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="mt-2">Đang tải dữ liệu ngân sách...</p>
+        </div>
+    </div>
+    
+    <!-- Danh sách kế hoạch ngân sách -->
+    <div class="card shadow">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Danh Sách Kế Hoạch Ngân Sách</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Danh mục</th>
+                        <th>Số tiền dự kiến</th>
+                        <th>Thời gian</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody id="budgetsList">
+                    <!-- Dữ liệu sẽ được thêm bằng JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Format số tiền
+    function formatCurrency(input) {
+        // Xoá dấu phẩy cũ
+        let value = input.value.replace(/,/g, '');
+        
+        // Chỉ cho phép số
+        if (!/^\d*$/.test(value)) return;
+        
+        // Format lại số có dấu phẩy
+        input.value = Number(value).toLocaleString('en-US');
+    }
+    
+    // Khởi tạo
+    document.addEventListener('DOMContentLoaded', () => {
+        // Thiết lập sự kiện format tiền
+        const amountInput = document.getElementById('amount');
+        amountInput.addEventListener('input', () => formatCurrency(amountInput));
+        
+        // Thiết lập ngày mặc định
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        
+        // Ngày bắt đầu mặc định là ngày hiện tại
+        document.getElementById('start_date').value = formattedDate;
+        
+        // Ngày kết thúc mặc định là cuối tháng
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const formattedEndDate = lastDayOfMonth.toISOString().split('T')[0];
+        document.getElementById('end_date').value = formattedEndDate;
+        
+        // Load dữ liệu
+        loadCategories();
+        loadBudgetSummary();
+        loadBudgets();
+    });
+    
+    // Xử lý form tạo kế hoạch ngân sách
+    document.getElementById('budgetForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Lấy dữ liệu từ form
+        const categoryId = document.getElementById('category').value;
+        const amount = document.getElementById('amount').value.replace(/,/g, '');
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const description = document.getElementById('description').value;
+        
+        // Kiểm tra dữ liệu
+        if (!categoryId) {
+            alert('Vui lòng chọn danh mục');
+            return;
+        }
+        
+        if (!amount || isNaN(amount) || Number(amount) <= 0) {
+            alert('Vui lòng nhập số tiền hợp lệ');
+            return;
+        }
+        
+        if (!startDate) {
+            alert('Vui lòng chọn ngày bắt đầu');
+            return;
+        }
+        
+        if (!endDate) {
+            alert('Vui lòng chọn ngày kết thúc');
+            return;
+        }
+        
+        // Kiểm tra ngày kết thúc phải sau ngày bắt đầu
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end < start) {
+            alert('Ngày kết thúc phải sau ngày bắt đầu');
+            return;
+        }
+        
+        // Tạo dữ liệu gửi đi
+        const data = {
+            category_id: categoryId,
+            amount: amount,
+            start_date: startDate,
+            end_date: endDate,
+            description: description
+        };
+        
+        try {
+            // Gửi request
+            const response = await fetch('/budget/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('Tạo kế hoạch ngân sách thành công!');
+                
+                // Reset form
+                document.getElementById('budgetForm').reset();
+                
+                // Thiết lập lại ngày mặc định
+                const today = new Date();
+                document.getElementById('start_date').value = today.toISOString().split('T')[0];
+                
+                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                document.getElementById('end_date').value = lastDayOfMonth.toISOString().split('T')[0];
+                
+                // Làm mới dữ liệu
+                loadBudgetSummary();
+                loadBudgets();
+            } else {
+                alert(result.error || 'Có lỗi xảy ra khi tạo kế hoạch ngân sách');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi kết nối đến máy chủ');
+        }
+    });
+    
+    // Load danh mục chi tiêu
+    async function loadCategories() {
+        try {
+            const response = await fetch('/categories');
+            const categories = await response.json();
+            
+            const select = document.getElementById('category');
+            select.innerHTML = `
+                <option value="">Chọn danh mục</option>
+                ${categories.map(cat => `
+                    <option value="${cat.ID}">${cat.Name}</option>
+                `).join('')}
+            `;
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+    
+    // Load tổng quan ngân sách
+    async function loadBudgetSummary() {
+        try {
+            const response = await fetch('/budget/summary');
+            const summaries = await response.json();
+            
+            const container = document.getElementById('budgetSummary');
+            
+            if (summaries.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Bạn chưa có kế hoạch ngân sách nào. Hãy tạo kế hoạch ngân sách đầu tiên!
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = summaries.map(summary => {
+                // Xác định màu sắc dựa trên phần trăm đã sử dụng
+                let progressClass = 'progress-bar-success';
+                if (summary.PercentUsed > 80) {
+                    progressClass = 'progress-bar-danger';
+                } else if (summary.PercentUsed > 60) {
+                    progressClass = 'progress-bar-warning';
+                }
+                
+                return `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card shadow budget-card">
+                            <div class="card-body">
+                                <h5 class="card-title">${summary.CategoryName}</h5>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Ngân sách:</span>
+                                    <span class="fw-bold">${summary.BudgetAmount.toLocaleString()} VND</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Đã chi tiêu:</span>
+                                    <span class="fw-bold">${summary.SpentAmount.toLocaleString()} VND</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Còn lại:</span>
+                                    <span class="fw-bold">${summary.RemainingAmount.toLocaleString()} VND</span>
+                                </div>
+                                <div class="progress mt-3">
+                                    <div class="progress-bar ${progressClass}" role="progressbar" 
+                                         style="width: ${summary.PercentUsed}%" 
+                                         aria-valuenow="${summary.PercentUsed}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        ${summary.PercentUsed.toFixed(1)}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading budget summary:', error);
+            document.getElementById('budgetSummary').innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu ngân sách
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Load danh sách kế hoạch ngân sách
+    async function loadBudgets() {
+        try {
+            const response = await fetch('/budget/list');
+            const budgets = await response.json();
+            
+            const tbody = document.getElementById('budgetsList');
+            
+            if (budgets.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center">Chưa có kế hoạch ngân sách nào</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = budgets.map(budget => `
+                <tr>
+                    <td>${budget.Category.Name}</td>
+                    <td>${budget.Amount.toLocaleString()} VND</td>
+                    <td>
+                        ${new Date(budget.StartDate).toLocaleDateString('vi-VN')} - 
+                        ${new Date(budget.EndDate).toLocaleDateString('vi-VN')}
+                    </td>
+                    <td>${budget.Description || 'Không có mô tả'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger delete-btn" data-id="${budget.ID}">
+                            <i class="bi bi-trash"></i> Xóa
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Thêm sự kiện cho nút xóa
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    if (confirm('Bạn có chắc muốn xóa kế hoạch ngân sách này?')) {
+                        deleteBudget(id);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error loading budgets:', error);
+            document.getElementById('budgetsList').innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Xóa kế hoạch ngân sách
+    async function deleteBudget(id) {
+        try {
+            const response = await fetch(`/budget/${id}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('Xóa kế hoạch ngân sách thành công!');
+                loadBudgetSummary();
+                loadBudgets();
+            } else {
+                alert(result.error || 'Có lỗi xảy ra khi xóa kế hoạch ngân sách');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi kết nối đến máy chủ');
+        }
+    }
+</script>
+</body>
+</html>

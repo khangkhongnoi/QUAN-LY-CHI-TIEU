@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Tài Chính</title>
+    <link rel="icon" type="image/png" href="../static/images/good-icon.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @media (max-width: 576px) {
+            .input-group { flex-direction: column; }
+            .input-group select, .input-group input { width: 100%!important; margin: 5px 0; }
+        }
+        
+        /* Cho phép kéo ngang trên thiết bị di động */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+            }
+            
+            /* Đảm bảo bảng có thể kéo ngang */
+            .table {
+                min-width: 600px;
+            }
+            
+            /* Cho phép kéo ngang biểu đồ */
+            .chart-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        .report-card {
+            transition: all 0.3s ease;
+        }
+        
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container py-3">
+    <!-- Header với menu điều hướng -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Báo Cáo Tài Chính</h2>
+        <div>
+            <a href="/" class="btn btn-outline-primary me-2">
+                <i class="bi bi-house"></i> <span class="d-none d-md-inline">Trang chủ</span>
+            </a>
+            <a href="/logout" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Đăng xuất</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Menu điều hướng -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-cash-coin"></i> Chi Tiêu</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/income"><i class="bi bi-wallet2"></i> Thu Nhập</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/budget"><i class="bi bi-calculator"></i> Ngân Sách</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/saving"><i class="bi bi-piggy-bank"></i> Tiết Kiệm</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="/report"><i class="bi bi-bar-chart"></i> Báo Cáo</a>
+        </li>
+    </ul>
+    
+    <!-- Tổng quan tài chính -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Tổng Quan Tài Chính</h5>
+            <div class="row g-3" id="financialOverview">
+                <div class="col-12 text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2">Đang tải dữ liệu tổng quan...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs báo cáo -->
+    <ul class="nav nav-pills mb-3" id="reportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="category-tab" data-bs-toggle="tab" data-bs-target="#category-report" type="button" role="tab" aria-controls="category-report" aria-selected="true">
+                <i class="bi bi-pie-chart"></i> Báo Cáo Theo Danh Mục
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="date-tab" data-bs-toggle="tab" data-bs-target="#date-report" type="button" role="tab" aria-controls="date-report" aria-selected="false">
+                <i class="bi bi-calendar-check"></i> Báo Cáo Theo Thời Gian
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison-report" type="button" role="tab" aria-controls="comparison-report" aria-selected="false">
+                <i class="bi bi-bar-chart"></i> So Sánh Thu Chi
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Nội dung tabs -->
+    <div class="tab-content" id="reportTabsContent">
+        <!-- Báo cáo theo danh mục -->
+        <div class="tab-pane fade show active" id="category-report" role="tabpanel" aria-labelledby="category-tab">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Chi Tiêu Theo Danh Mục</h5>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary period-btn" data-period="month">Tháng này</button>
+                            <button type="button" class="btn btn-outline-primary period-btn" data-period="year">Năm nay</button>
+                            <button type="button" class="btn btn-outline-primary period-btn" data-period="all">Tất cả</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="categoryTable">
+                                    <thead>
+                                    <tr>
+                                        <th>Danh mục</th>
+                                        <th>Số tiền</th>
+                                        <th>Tỷ lệ</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <!-- Dữ liệu sẽ được thêm bằng JS -->
+                                    </tbody>
+                                    <tfoot>
+                                    <tr class="table-primary">
+                                        <th>Tổng cộng</th>
+                                        <th id="categoryTotal">0 VND</th>
+                                        <th>100%</th>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Báo cáo theo thời gian -->
+        <div class="tab-pane fade" id="date-report" role="tabpanel" aria-labelledby="date-tab">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Chi Tiêu Theo Thời Gian</h5>
+                    
+                    <form id="dateRangeForm" class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label for="start_date" class="form-label">Từ ngày</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="end_date" class="form-label">Đến ngày</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Xem báo cáo</button>
+                        </div>
+                    </form>
+                    
+                    <div id="dateRangeReport">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Chọn khoảng thời gian và nhấn "Xem báo cáo" để xem chi tiết chi tiêu.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- So sánh thu chi -->
+        <div class="tab-pane fade" id="comparison-report" role="tabpanel" aria-labelledby="comparison-tab">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">So Sánh Thu Nhập và Chi Tiêu</h5>
+                        <div class="input-group" style="width: 200px;">
+                            <label class="input-group-text" for="year-select">Năm</label>
+                            <select class="form-select" id="year-select">
+                                <!-- Các năm sẽ được thêm bằng JS -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" style="position: relative; height:400px; width:100%; overflow-x: auto; overflow-y: hidden">
+                        <div style="min-width: 800px; height: 100%">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Biến lưu trữ biểu đồ
+    let categoryChart = null;
+    let comparisonChart = null;
+    
+    // Khởi tạo
+    document.addEventListener('DOMContentLoaded', () => {
+        // Thiết lập ngày mặc định cho báo cáo theo thời gian
+        const today = new Date();
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        document.getElementById('end_date').value = today.toISOString().split('T')[0];
+        document.getElementById('start_date').value = firstDayOfMonth.toISOString().split('T')[0];
+        
+        // Thiết lập các năm cho dropdown so sánh thu chi
+        const yearSelect = document.getElementById('year-select');
+        const currentYear = today.getFullYear();
+        
+        for (let year = currentYear; year >= currentYear - 5; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+        
+        // Load dữ liệu
+        loadFinancialOverview();
+        loadCategoryReport('month'); // Mặc định là tháng này
+        
+        // Xử lý sự kiện chọn khoảng thời gian cho báo cáo danh mục
+        document.querySelectorAll('.period-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                
+                // Cập nhật trạng thái active
+                document.querySelectorAll('.period-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+                
+                this.classList.add('active');
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+                
+                // Load dữ liệu
+                loadCategoryReport(period);
+            });
+        });
+        
+        // Mặc định chọn "Tháng này"
+        document.querySelector('.period-btn[data-period="month"]').classList.add('active');
+        document.querySelector('.period-btn[data-period="month"]').classList.remove('btn-outline-primary');
+        document.querySelector('.period-btn[data-period="month"]').classList.add('btn-primary');
+        
+        // Xử lý form báo cáo theo thời gian
+        document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            loadDateRangeReport();
+        });
+        
+        // Xử lý sự kiện chọn năm cho so sánh thu chi
+        document.getElementById('year-select').addEventListener('change', function() {
+            loadComparisonReport(this.value);
+        });
+        
+        // Xử lý sự kiện chuyển tab
+        document.getElementById('comparison-tab').addEventListener('shown.bs.tab', function() {
+            loadComparisonReport(document.getElementById('year-select').value);
+        });
+    });
+    
+    // Load tổng quan tài chính
+    async function loadFinancialOverview() {
+        try {
+            const response = await fetch('/financial-overview');
+            const data = await response.json();
+            
+            const container = document.getElementById('financialOverview');
+            
+            // Tính tỷ lệ tiết kiệm
+            const savingRate = data.monthlyIncome > 0 
+                ? (data.savingTotal / data.monthlyIncome * 100).toFixed(1) 
+                : 0;
+            
+            container.innerHTML = `
+                <div class="col-md-3">
+                    <div class="card report-card bg-primary bg-opacity-10">
+                        <div class="card-body text-center">
+                            <h6 class="card-subtitle mb-2 text-muted">Thu Nhập Tháng Này</h6>
+                            <h3 class="card-title text-primary">${data.monthlyIncome.toLocaleString()} VND</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card report-card bg-danger bg-opacity-10">
+                        <div class="card-body text-center">
+                            <h6 class="card-subtitle mb-2 text-muted">Chi Tiêu Tháng Này</h6>
+                            <h3 class="card-title text-danger">${data.monthlyExpense.toLocaleString()} VND</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card report-card ${data.balance >= 0 ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}">
+                        <div class="card-body text-center">
+                            <h6 class="card-subtitle mb-2 text-muted">Số Dư Tháng Này</h6>
+                            <h3 class="card-title ${data.balance >= 0 ? 'text-success' : 'text-danger'}">${data.balance.toLocaleString()} VND</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card report-card bg-info bg-opacity-10">
+                        <div class="card-body text-center">
+                            <h6 class="card-subtitle mb-2 text-muted">Tổng Tiết Kiệm</h6>
+                            <h3 class="card-title text-info">${data.savingTotal.toLocaleString()} VND</h3>
+                            <small class="text-muted">${savingRate}% thu nhập</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error loading financial overview:', error);
+            document.getElementById('financialOverview').innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu tổng quan tài chính
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Load báo cáo theo danh mục
+    async function loadCategoryReport(period) {
+        try {
+            const response = await fetch(`/report/category?period=${period}`);
+            const data = await response.json();
+            
+            // Cập nhật bảng
+            const tbody = document.getElementById('categoryTable').querySelector('tbody');
+            document.getElementById('categoryTotal').textContent = `${data.total.toLocaleString()} VND`;
+            
+            if (data.categories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center">Không có dữ liệu chi tiêu</td>
+                    </tr>
+                `;
+                
+                // Xóa biểu đồ cũ nếu có
+                if (categoryChart) {
+                    categoryChart.destroy();
+                    categoryChart = null;
+                }
+                
+                return;
+            }
+            
+            // Sắp xếp danh mục theo số tiền giảm dần
+            data.categories.sort((a, b) => b.Amount - a.Amount);
+            
+            tbody.innerHTML = data.categories.map(category => `
+                <tr>
+                    <td>${category.CategoryName}</td>
+                    <td>${category.Amount.toLocaleString()} VND</td>
+                    <td>${category.Percentage.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+            
+            // Cập nhật biểu đồ
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            // Xóa biểu đồ cũ nếu có
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+            
+            // Tạo mảng màu ngẫu nhiên
+            const backgroundColors = data.categories.map(() => {
+                const r = Math.floor(Math.random() * 200);
+                const g = Math.floor(Math.random() * 200);
+                const b = Math.floor(Math.random() * 200);
+                return `rgba(${r}, ${g}, ${b}, 0.7)`;
+            });
+            
+            // Tạo biểu đồ mới
+            categoryChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.categories.map(category => category.CategoryName),
+                    datasets: [{
+                        data: data.categories.map(category => category.Amount),
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const percentage = (value / data.total * 100).toFixed(1);
+                                    return `${value.toLocaleString()} VND (${percentage}%)`;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Chi tiêu theo danh mục - ${getPeriodText(period)}`
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading category report:', error);
+            document.getElementById('categoryTable').querySelector('tbody').innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Load báo cáo theo khoảng thời gian
+    async function loadDateRangeReport() {
+        try {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            
+            if (!startDate || !endDate) {
+                alert('Vui lòng chọn khoảng thời gian');
+                return;
+            }
+            
+            const response = await fetch(`/report/date-range?start_date=${startDate}&end_date=${endDate}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('dateRangeReport');
+            
+            if (data.expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Không có chi tiêu nào trong khoảng thời gian từ 
+                        ${new Date(startDate).toLocaleDateString('vi-VN')} đến 
+                        ${new Date(endDate).toLocaleDateString('vi-VN')}.
+                    </div>
+                `;
+                return;
+            }
+            
+            // Định dạng khoảng thời gian
+            const formattedStartDate = new Date(startDate).toLocaleDateString('vi-VN');
+            const formattedEndDate = new Date(endDate).toLocaleDateString('vi-VN');
+            
+            container.innerHTML = `
+                <div class="alert alert-success mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-calendar-check"></i> Báo cáo chi tiêu từ 
+                            <strong>${formattedStartDate}</strong> đến 
+                            <strong>${formattedEndDate}</strong>
+                        </div>
+                        <div>
+                            <strong>Tổng chi tiêu: ${data.total.toLocaleString()} VND</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Danh mục</th>
+                            <th>Số tiền</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            ${data.expenses.map(expense => `
+                                <tr>
+                                    <td>${new Date(expense.ExpenseDate).toLocaleDateString('vi-VN')}</td>
+                                    <td>${expense.Category.Name}</td>
+                                    <td>${expense.Amount.toLocaleString()} VND</td>
+                                    <td>${expense.Note || 'Không có ghi chú'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                        <tr class="table-primary">
+                            <th colspan="2">Tổng cộng</th>
+                            <th colspan="2">${data.total.toLocaleString()} VND</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error loading date range report:', error);
+            document.getElementById('dateRangeReport').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu báo cáo
+                </div>
+            `;
+        }
+    }
+    
+    // Load báo cáo so sánh thu chi
+    async function loadComparisonReport(year) {
+        try {
+            const response = await fetch(`/report/comparison?year=${year}`);
+            const data = await response.json();
+            
+            // Tạo mảng nhãn cho các tháng trong năm
+            const monthNames = [
+                'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+            ];
+            
+            // Lấy canvas để vẽ biểu đồ
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            
+            // Xóa biểu đồ cũ nếu có
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            
+            // Tạo mảng dữ liệu
+            const incomeData = data.data.map(item => item.Income);
+            const expenseData = data.data.map(item => item.Expense);
+            const balanceData = data.data.map(item => item.Balance);
+            
+            // Tạo biểu đồ mới
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthNames,
+                    datasets: [
+                        {
+                            label: 'Thu nhập',
+                            data: incomeData,
+                            backgroundColor: 'rgba(40, 167, 69, 0.5)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Chi tiêu',
+                            data: expenseData,
+                            backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Số dư',
+                            data: balanceData,
+                            type: 'line',
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' VND';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' VND';
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `So sánh thu nhập và chi tiêu - Năm ${year}`
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading comparison report:', error);
+            document.getElementById('comparisonChart').parentElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra khi tải dữ liệu báo cáo
+                </div>
+            `;
+        }
+    }
+    
+    // Hàm trợ giúp lấy text cho khoảng thời gian
+    function getPeriodText(period) {
+        switch (period) {
+            case 'month':
+                return 'Tháng này';
+            case 'year':
+                return 'Năm nay';
+            case 'all':
+                return 'Tất cả thời gian';
+            default:
+                return 'Tháng này';
+        }
+    }
+</script>
+</body>
+</html>
