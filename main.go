@@ -75,6 +75,7 @@ func main() {
 		authorized.GET("/categories", handlers.GetCategories)
 		authorized.POST("/categories", handlers.AddCategory)
 		authorized.GET("/daily-expenses", handlers.GetDailyExpenses)
+		authorized.GET("/monthly-expenses", handlers.GetMonthlyExpenses)
 		authorized.DELETE("/expenses/:id", handlers.DeleteExpense)
 	}
 

@@ -159,6 +159,18 @@
             </div>
         </div>
     </div>
+    
+    <!-- Biểu đồ chi tiêu theo tháng -->
+    <div class="card shadow mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Chi tiêu theo tháng trong năm</h5>
+            <div class="chart-container" style="position: relative; height:300px; width:100%; overflow-x: auto; overflow-y: hidden">
+                <div style="min-width: 800px; height: 100%">
+                    <canvas id="monthlyExpensesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Lịch sử -->
     <div class="card shadow">
@@ -248,6 +260,7 @@
         loadCategories();
         loadData();
         loadDailyExpensesChart();
+        loadMonthlyExpensesChart();
         
         // Thiết lập ngày mặc định cho trường ngày chi tiêu là ngày hiện tại
         const today = new Date();
@@ -307,7 +320,8 @@
 
         if(response.redirected) {
             loadData();
-            loadDailyExpensesChart(); // Cập nhật lại biểu đồ
+            loadDailyExpensesChart(); // Cập nhật lại biểu đồ ngày
+            loadMonthlyExpensesChart(); // Cập nhật lại biểu đồ tháng
             
             // Lưu lại giá trị ngày chi tiêu
             const expenseDateValue = document.getElementById('expense_date').value;
@@ -572,7 +586,8 @@
         const result = await response.json();
         if (response.ok) {
             loadData();
-            loadDailyExpensesChart(); // Cập nhật lại biểu đồ
+            loadDailyExpensesChart(); // Cập nhật lại biểu đồ ngày
+            loadMonthlyExpensesChart(); // Cập nhật lại biểu đồ tháng
         } else {
             alert(result.error || 'Có lỗi xảy ra khi xóa');
         }
@@ -654,6 +669,86 @@
             });
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu biểu đồ:', error);
+        }
+    }
+    
+    // Hàm tải và hiển thị biểu đồ chi tiêu theo tháng
+    async function loadMonthlyExpensesChart() {
+        try {
+            console.log('Fetching monthly expenses data...');
+            const response = await fetch('/monthly-expenses');
+            console.log('Response status:', response.status);
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            const data = JSON.parse(responseText);
+            console.log('Parsed data:', data);
+            
+            // Tạo mảng nhãn cho các tháng trong năm
+            const monthNames = [
+                'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+            ];
+            
+            // Lấy canvas để vẽ biểu đồ
+            const ctx = document.getElementById('monthlyExpensesChart').getContext('2d');
+            
+            // Xóa biểu đồ cũ nếu có
+            if (window.monthlyChart) {
+                window.monthlyChart.destroy();
+            }
+            
+            // Tạo biểu đồ mới
+            window.monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthNames,
+                    datasets: [{
+                        label: 'Chi tiêu (VND)',
+                        data: data.data || [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' VND';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tháng trong năm'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toLocaleString() + ' VND';
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: `Chi tiêu theo tháng - Năm ${data.year || new Date().getFullYear()}`
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu biểu đồ tháng:', error);
         }
     }
 </script>

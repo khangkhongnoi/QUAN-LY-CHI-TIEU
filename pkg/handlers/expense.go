@@ -322,3 +322,58 @@ func GetDailyExpenses(c *gin.Context) {
 		"days": daysInMonth,
 	})
 }
+
+// GetMonthlyExpenses trả về chi tiêu theo tháng trong năm hiện tại
+func GetMonthlyExpenses(c *gin.Context) {
+	// Lấy user_id từ context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	now := time.Now()
+	currentYear := now.Year()
+
+	// Lấy ngày đầu tiên của năm
+	firstOfYear := time.Date(currentYear, 1, 1, 0, 0, 0, 0, now.Location())
+
+	// Lấy ngày đầu tiên của năm tiếp theo
+	firstOfNextYear := time.Date(currentYear+1, 1, 1, 0, 0, 0, 0, now.Location())
+
+	// Tạo mảng kết quả với 12 tháng
+	result := make([]int, 12)
+
+	// Truy vấn tổng chi tiêu theo tháng
+	type MonthlySum struct {
+		Month int
+		Total int
+	}
+
+	var monthlySums []MonthlySum
+
+	// Truy vấn SQL để lấy tổng chi tiêu theo tháng chi tiêu
+	database.DB.Table("expenses").
+		Select("EXTRACT(MONTH FROM expense_date) as month, COALESCE(SUM(amount), 0) as total").
+		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL", 
+			firstOfYear, firstOfNextYear, userID).
+		Group("EXTRACT(MONTH FROM expense_date)").
+		Scan(&monthlySums)
+
+	// Khởi tạo mảng kết quả với giá trị 0
+	for i := range result {
+		result[i] = 0
+	}
+
+	// Điền dữ liệu vào mảng kết quả
+	for _, sum := range monthlySums {
+		if sum.Month >= 1 && sum.Month <= 12 {
+			result[sum.Month-1] = sum.Total
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": result,
+		"year": currentYear,
+	})
+}
