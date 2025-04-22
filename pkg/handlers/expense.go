@@ -157,7 +157,7 @@ func GetSummary(c *gin.Context) {
 	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
 	database.DB.Table("expenses").
-		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL", 
+		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL",
 			firstOfMonth, firstOfMonth.AddDate(0, 1, 0), userID).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&monthlyTotal)
@@ -179,7 +179,7 @@ func GetExpenses(c *gin.Context) {
 	var expenses []models.Expense
 	database.DB.Preload("Category").
 		Where("user_id = ? AND deleted_at IS NULL", userID).
-		Order("expense_date DESC, created_at DESC").
+		Order("created_at DESC").
 		Find(&expenses)
 
 	c.JSON(http.StatusOK, expenses)
@@ -300,7 +300,7 @@ func GetDailyExpenses(c *gin.Context) {
 	// Truy vấn SQL để lấy tổng chi tiêu theo ngày chi tiêu
 	database.DB.Table("expenses").
 		Select("EXTRACT(DAY FROM expense_date) as day, COALESCE(SUM(amount), 0) as total").
-		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL", 
+		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL",
 			firstOfMonth, firstOfNextMonth, userID).
 		Group("EXTRACT(DAY FROM expense_date)").
 		Scan(&dailySums)
@@ -355,7 +355,7 @@ func GetMonthlyExpenses(c *gin.Context) {
 	// Truy vấn SQL để lấy tổng chi tiêu theo tháng chi tiêu
 	database.DB.Table("expenses").
 		Select("EXTRACT(MONTH FROM expense_date) as month, COALESCE(SUM(amount), 0) as total").
-		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL", 
+		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL",
 			firstOfYear, firstOfNextYear, userID).
 		Group("EXTRACT(MONTH FROM expense_date)").
 		Scan(&monthlySums)
