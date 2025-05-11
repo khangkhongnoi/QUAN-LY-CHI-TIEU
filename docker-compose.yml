@@ -5,7 +5,7 @@ services:
     build: .
     container_name: expense-tracker-app
     ports:
-      - "80:80"
+      - "8202:80"
     depends_on:
       - postgres
     environment:
