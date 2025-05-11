@@ -151,7 +151,7 @@
 
     <!-- Thống kê -->
     <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
             <div class="card shadow">
                 <div class="card-body">
                     <h5 class="card-title">Chi tiêu hôm nay</h5>
@@ -160,7 +160,16 @@
             </div>
         </div>
 
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Chi tiêu tuần này</h5>
+                    <h2 id="weeklyTotal" class="text-warning">0 VND</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
             <div class="card shadow">
                 <div class="card-body">
                     <h5 class="card-title">Chi tiêu tháng này</h5>
@@ -362,6 +371,8 @@
             fetch('/summary').then(res => res.json()).then(data => {
                 document.getElementById('dailyTotal').textContent =
                     `${data.daily.toLocaleString()} VND`;
+                document.getElementById('weeklyTotal').textContent =
+                    `${data.weekly.toLocaleString()} VND`;
                 document.getElementById('monthlyTotal').textContent =
                     `${data.monthly.toLocaleString()} VND`;
             }),

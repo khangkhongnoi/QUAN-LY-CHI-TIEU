@@ -142,6 +142,7 @@ func GetSummary(c *gin.Context) {
 
 	var (
 		dailyTotal   int
+		weeklyTotal  int
 		monthlyTotal int
 	)
 
@@ -152,6 +153,21 @@ func GetSummary(c *gin.Context) {
 		Where("DATE(expense_date) = ? AND user_id = ? AND deleted_at IS NULL", now.Format("2006-01-02"), userID).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dailyTotal)
+
+	// Tính tổng tuần theo ngày chi tiêu
+	// Lấy ngày đầu tiên của tuần (Thứ Hai)
+	weekday := now.Weekday()
+	if weekday == 0 { // Chủ nhật
+		weekday = 7
+	}
+	firstOfWeek := now.AddDate(0, 0, -int(weekday-1))
+	firstOfWeek = time.Date(firstOfWeek.Year(), firstOfWeek.Month(), firstOfWeek.Day(), 0, 0, 0, 0, now.Location())
+	
+	database.DB.Table("expenses").
+		Where("expense_date >= ? AND expense_date < ? AND user_id = ? AND deleted_at IS NULL",
+			firstOfWeek, firstOfWeek.AddDate(0, 0, 7), userID).
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&weeklyTotal)
 
 	// Tính tổng tháng theo ngày chi tiêu
 	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
@@ -164,6 +180,7 @@ func GetSummary(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"daily":   dailyTotal,
+		"weekly":  weeklyTotal,
 		"monthly": monthlyTotal,
 	})
 }
