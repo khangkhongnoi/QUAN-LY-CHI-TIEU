@@ -5,7 +5,7 @@ services:
     build: .
     container_name: expense-tracker-app
     ports:
-      - "80:80"
+      - "8202:80"
     depends_on:
       - postgres
     environment:
@@ -27,6 +27,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=khangttcnpm2024
       - POSTGRES_DB=expense_tracker
+      - TZ=Asia/Ho_Chi_Minh
+      - PGTZ=Asia/Ho_Chi_Minh
     ports:
       - "5432:5432"
     volumes:
