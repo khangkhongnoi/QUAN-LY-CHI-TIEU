@@ -46,6 +46,13 @@ func main() {
 		&models.Budget{},
 		&models.SavingGoal{},
 		&models.SavingTransaction{},
+		// Các model nâng cao
+		&models.SavingChallenge{},
+		&models.ExpenseForecast{},
+		&models.AIRecommendation{},
+		&models.ExpensePattern{},
+		&models.BudgetWarning{},
+		&models.ReceiptScan{},
 	)
 
 	// Khởi tạo router
@@ -89,7 +96,7 @@ func main() {
 		authorized.DELETE("/expenses/:id", handlers.DeleteExpense)
 		authorized.GET("/expenses/:id", handlers.GetExpenseDetail)
 		authorized.PUT("/expenses/:id", handlers.UpdateExpense)
-		
+
 		// Quản lý thu nhập
 		authorized.GET("/income", handlers.ShowIncomePage)
 		authorized.POST("/income/add", handlers.AddIncome)
@@ -99,14 +106,14 @@ func main() {
 		authorized.DELETE("/income/:id", handlers.DeleteIncome)
 		authorized.GET("/income/summary", handlers.GetIncomeSummary)
 		authorized.GET("/income/monthly", handlers.GetMonthlyIncomes)
-		
+
 		// Kế hoạch ngân sách
 		authorized.GET("/budget", handlers.ShowBudgetPage)
 		authorized.POST("/budget/add", handlers.AddBudget)
 		authorized.GET("/budget/list", handlers.GetBudgets)
 		authorized.GET("/budget/summary", handlers.GetBudgetSummary)
 		authorized.DELETE("/budget/:id", handlers.DeleteBudget)
-		
+
 		// Mục tiêu tiết kiệm
 		authorized.GET("/saving", handlers.ShowSavingPage)
 		authorized.POST("/saving/add", handlers.AddSavingGoal)
@@ -114,15 +121,25 @@ func main() {
 		authorized.POST("/saving/transaction", handlers.AddSavingTransaction)
 		authorized.GET("/saving/:goal_id/transactions", handlers.GetSavingTransactions)
 		authorized.DELETE("/saving/:id", handlers.DeleteSavingGoal)
-		
+
 		// Báo cáo và phân tích
 		authorized.GET("/report", handlers.ShowReportPage)
 		authorized.GET("/report/category", handlers.GetCategoryReport)
 		authorized.GET("/report/date-range", handlers.GetExpensesByDateRange)
 		authorized.GET("/report/comparison", handlers.GetIncomeExpenseComparison)
-		
+
 		// Tổng quan tài chính
 		authorized.GET("/financial-overview", handlers.GetFinancialOverview)
+
+		// Các tính năng nâng cao
+		authorized.GET("/advanced", handlers.ShowAdvancedPage)
+		authorized.GET("/budget/warnings", handlers.GetBudgetWarnings)
+		authorized.GET("/expenses/unusual", handlers.DetectUnusualExpenses)
+		authorized.GET("/expenses/forecast", handlers.ForecastExpenses)
+		authorized.GET("/savings/challenges", handlers.GetSavingChallenges)
+		authorized.POST("/savings/challenges", handlers.CreateSavingChallenge)
+		authorized.GET("/expenses/analysis", handlers.AnalyzeExpensePatterns)
+		authorized.GET("/ai/recommendations", handlers.GetAIRecommendations)
 	}
 
 	// Khởi chạy server

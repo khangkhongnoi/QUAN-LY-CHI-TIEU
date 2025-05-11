@@ -86,6 +86,9 @@
         <li class="nav-item">
             <a class="nav-link" href="/report"><i class="bi bi-bar-chart"></i> Báo Cáo</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/advanced"><i class="bi bi-stars"></i> Nâng Cao</a>
+        </li>
     </ul>
     
     <!-- Form thêm chi tiêu -->
@@ -146,6 +149,30 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Cảnh báo chi tiêu -->
+    <div id="warningsContainer" class="mb-3 d-none">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Cảnh báo chi tiêu
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="budgetWarnings">
+                    <!-- Cảnh báo ngân sách sẽ được thêm bằng JS -->
+                </div>
+                <div id="unusualExpenses">
+                    <!-- Cảnh báo chi tiêu bất thường sẽ được thêm bằng JS -->
+                </div>
+                <div class="text-end mt-2">
+                    <a href="/advanced" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-stars"></i> Xem tính năng nâng cao
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -292,12 +319,89 @@
         loadData();
         loadDailyExpensesChart();
         loadMonthlyExpensesChart();
+        loadBudgetWarnings();
+        loadUnusualExpenses();
         
         // Thiết lập ngày mặc định cho trường ngày chi tiêu là ngày hiện tại
         const today = new Date();
         const formattedDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
         document.getElementById('expense_date').value = formattedDate;
     });
+    
+    // Format số tiền
+    function formatMoney(amount) {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // Load cảnh báo ngân sách
+    async function loadBudgetWarnings() {
+        try {
+            const response = await fetch('/budget/warnings');
+            const data = await response.json();
+            
+            const warningsContainer = document.getElementById('warningsContainer');
+            const budgetWarningsElement = document.getElementById('budgetWarnings');
+            
+            if (data.warnings && data.warnings.length > 0) {
+                budgetWarningsElement.innerHTML = data.warnings.map(warning => `
+                    <div class="alert alert-${warning.severity === 'high' ? 'danger' : 'warning'} mb-2">
+                        <strong>${warning.category_name}:</strong> ${warning.message}
+                        <div class="progress mt-2" style="height: 10px;">
+                            <div class="progress-bar bg-${warning.severity === 'high' ? 'danger' : 'warning'}" 
+                                 role="progressbar" style="width: ${warning.percent}%;" 
+                                 aria-valuenow="${warning.percent}" aria-valuemin="0" aria-valuemax="100">
+                                ${Math.round(warning.percent)}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            ${formatMoney(warning.spent)} VND / ${formatMoney(warning.budget)} VND
+                        </small>
+                    </div>
+                `).join('');
+                
+                warningsContainer.classList.remove('d-none');
+            } else {
+                budgetWarningsElement.innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải cảnh báo ngân sách:', error);
+        }
+    }
+    
+    // Load chi tiêu bất thường
+    async function loadUnusualExpenses() {
+        try {
+            const response = await fetch('/expenses/unusual');
+            const data = await response.json();
+            
+            const warningsContainer = document.getElementById('warningsContainer');
+            const unusualExpensesElement = document.getElementById('unusualExpenses');
+            
+            if (data.unusual_expenses && data.unusual_expenses.length > 0) {
+                unusualExpensesElement.innerHTML = data.unusual_expenses.map(expense => `
+                    <div class="alert alert-info mb-2">
+                        <strong>${expense.category_name}:</strong> ${expense.message}
+                        <div class="d-flex justify-content-between mt-2">
+                            <span>Trung bình: ${formatMoney(Math.round(expense.average_amount))} VND</span>
+                            <span>Hiện tại: ${formatMoney(expense.current_amount)} VND</span>
+                            <span>Tăng: +${Math.round(expense.percent_increase)}%</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                warningsContainer.classList.remove('d-none');
+            } else {
+                unusualExpensesElement.innerHTML = '';
+            }
+            
+            // Ẩn container nếu không có cảnh báo nào
+            if (unusualExpensesElement.innerHTML === '' && document.getElementById('budgetWarnings').innerHTML === '') {
+                warningsContainer.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải chi tiêu bất thường:', error);
+        }
+    }
 
     // Xử lý form
     document.getElementById('expenseForm').addEventListener('submit', async (e) => {

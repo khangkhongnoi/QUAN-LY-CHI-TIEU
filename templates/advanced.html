@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính Năng Nâng Cao - Quản Lý Chi Tiêu</title>
+    <link rel="icon" type="image/png" href="../static/images/good-icon.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @media (max-width: 576px) {
+            .input-group { flex-direction: column; }
+            .input-group select, .input-group input { width: 100%!important; margin: 5px 0; }
+        }
+        
+        .progress-label {
+            position: absolute;
+            right: 10px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .recommendation-card {
+            transition: transform 0.3s;
+        }
+        
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .challenge-card {
+            transition: transform 0.3s;
+        }
+        
+        .challenge-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .forecast-card {
+            border-left: 5px solid #6c757d;
+        }
+        
+        .forecast-card.high-confidence {
+            border-left-color: #28a745;
+        }
+        
+        .forecast-card.medium-confidence {
+            border-left-color: #ffc107;
+        }
+        
+        .forecast-card.low-confidence {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container py-3">
+    <!-- Header với menu điều hướng -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Quản Lý Chi Tiêu</h2>
+        <div>
+            <a href="/logout" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Đăng xuất</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Menu điều hướng -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-cash-coin"></i> Chi Tiêu</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/income"><i class="bi bi-wallet2"></i> Thu Nhập</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/budget"><i class="bi bi-calculator"></i> Ngân Sách</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/saving"><i class="bi bi-piggy-bank"></i> Tiết Kiệm</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/report"><i class="bi bi-bar-chart"></i> Báo Cáo</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="/advanced"><i class="bi bi-stars"></i> Nâng Cao</a>
+        </li>
+    </ul>
+    
+    <!-- Cảnh báo chi tiêu -->
+    <div id="warningsContainer" class="mb-4 d-none">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Cảnh báo chi tiêu
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="budgetWarnings">
+                    <!-- Cảnh báo ngân sách sẽ được thêm bằng JS -->
+                </div>
+                <div id="unusualExpenses">
+                    <!-- Cảnh báo chi tiêu bất thường sẽ được thêm bằng JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Đề xuất tiết kiệm từ AI -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-lightbulb-fill"></i> Đề xuất tiết kiệm thông minh
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" id="aiRecommendations">
+                <!-- Đề xuất sẽ được thêm bằng JS -->
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2">Đang phân tích dữ liệu chi tiêu của bạn...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Thách thức tiết kiệm -->
+    <div class="row mb-4">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-trophy-fill"></i> Thách thức tiết kiệm
+                    </h5>
+                    <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#newChallengeModal">
+                        <i class="bi bi-plus-circle"></i> Tạo thách thức mới
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="savingChallenges">
+                        <!-- Thách thức sẽ được thêm bằng JS -->
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2">Đang tải thách thức tiết kiệm...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dự báo chi tiêu -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Dự báo chi tiêu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="expenseForecasts">
+                        <!-- Dự báo sẽ được thêm bằng JS -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2">Đang tính toán dự báo chi tiêu...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Phân tích mẫu chi tiêu -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-search"></i> Phân tích mẫu chi tiêu
+            </h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-3" id="patternTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="recurring-tab" data-bs-toggle="tab" data-bs-target="#recurring" type="button" role="tab" aria-controls="recurring" aria-selected="true">
+                        <i class="bi bi-arrow-repeat"></i> Chi tiêu định kỳ
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="seasonal-tab" data-bs-toggle="tab" data-bs-target="#seasonal" type="button" role="tab" aria-controls="seasonal" aria-selected="false">
+                        <i class="bi bi-calendar-event"></i> Chi tiêu theo mùa
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="impulse-tab" data-bs-toggle="tab" data-bs-target="#impulse" type="button" role="tab" aria-controls="impulse" aria-selected="false">
+                        <i class="bi bi-lightning-charge"></i> Chi tiêu bốc đồng
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="patternTabsContent">
+                <div class="tab-pane fade show active" id="recurring" role="tabpanel" aria-labelledby="recurring-tab">
+                    <div id="recurringExpenses">
+                        <!-- Chi tiêu định kỳ sẽ được thêm bằng JS -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2">Đang phân tích chi tiêu định kỳ...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="seasonal" role="tabpanel" aria-labelledby="seasonal-tab">
+                    <div id="seasonalExpenses">
+                        <!-- Chi tiêu theo mùa sẽ được thêm bằng JS -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2">Đang phân tích chi tiêu theo mùa...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="impulse" role="tabpanel" aria-labelledby="impulse-tab">
+                    <div id="impulseExpenses">
+                        <!-- Chi tiêu bốc đồng sẽ được thêm bằng JS -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2">Đang phân tích chi tiêu bốc đồng...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal tạo thách thức tiết kiệm mới -->
+<div class="modal fade" id="newChallengeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tạo thách thức tiết kiệm mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="challengeForm">
+                    <div class="mb-3">
+                        <label for="challengeTitle" class="form-label">Tiêu đề thách thức</label>
+                        <input type="text" class="form-control" id="challengeTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="challengeDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="challengeDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="challengeAmount" class="form-label">Số tiền mục tiêu (VND)</label>
+                        <input type="text" class="form-control" id="challengeAmount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="challengeCategory" class="form-label">Danh mục</label>
+                        <select class="form-select" id="challengeCategory" required>
+                            <option value="">Chọn danh mục</option>
+                            <!-- Danh mục sẽ được thêm bằng JS -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="challengeEndDate" class="form-label">Ngày kết thúc</label>
+                        <input type="date" class="form-control" id="challengeEndDate" required>
+                    </div>
+                    <div id="challengeError" class="alert alert-danger d-none"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" id="saveChallenge">Tạo thách thức</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Format số tiền
+    function formatMoney(amount) {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // Format số tiền trong input
+    const amountInput = document.getElementById('challengeAmount');
+    if (amountInput) {
+        amountInput.addEventListener('input', function (e) {
+            // Xoá dấu phẩy cũ
+            let value = e.target.value.replace(/,/g, '');
+            
+            // Chỉ cho phép số
+            if (!/^\d*$/.test(value)) return;
+            
+            // Format lại số có dấu phẩy
+            e.target.value = Number(value).toLocaleString('en-US');
+        });
+    }
+    
+    // Khởi tạo
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCategories();
+        loadBudgetWarnings();
+        loadUnusualExpenses();
+        loadAIRecommendations();
+        loadSavingChallenges();
+        loadExpenseForecasts();
+        loadExpensePatterns();
+        
+        // Thiết lập ngày mặc định cho trường ngày kết thúc thách thức là 30 ngày sau
+        const thirtyDaysLater = new Date();
+        thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+        const formattedDate = thirtyDaysLater.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        document.getElementById('challengeEndDate').value = formattedDate;
+    });
+    
+    // Load danh mục
+    async function loadCategories() {
+        try {
+            const response = await fetch('/categories');
+            const categories = await response.json();
+            
+            const select = document.getElementById('challengeCategory');
+            select.innerHTML = `
+                <option value="">Chọn danh mục</option>
+                ${categories.map(cat => `
+                    <option value="${cat.ID}">${cat.Name}</option>
+                `).join('')}
+            `;
+        } catch (error) {
+            console.error('Lỗi khi tải danh mục:', error);
+        }
+    }
+    
+    // Load cảnh báo ngân sách
+    async function loadBudgetWarnings() {
+        try {
+            const response = await fetch('/budget/warnings');
+            const data = await response.json();
+            
+            const warningsContainer = document.getElementById('warningsContainer');
+            const budgetWarningsElement = document.getElementById('budgetWarnings');
+            
+            if (data.warnings && data.warnings.length > 0) {
+                budgetWarningsElement.innerHTML = data.warnings.map(warning => `
+                    <div class="alert alert-${warning.severity === 'high' ? 'danger' : 'warning'} mb-2">
+                        <strong>${warning.category_name}:</strong> ${warning.message}
+                        <div class="progress mt-2" style="height: 10px;">
+                            <div class="progress-bar bg-${warning.severity === 'high' ? 'danger' : 'warning'}" 
+                                 role="progressbar" style="width: ${warning.percent}%;" 
+                                 aria-valuenow="${warning.percent}" aria-valuemin="0" aria-valuemax="100">
+                                <span class="progress-label">${Math.round(warning.percent)}%</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            ${formatMoney(warning.spent)} VND / ${formatMoney(warning.budget)} VND
+                        </small>
+                    </div>
+                `).join('');
+                
+                warningsContainer.classList.remove('d-none');
+            } else {
+                budgetWarningsElement.innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải cảnh báo ngân sách:', error);
+        }
+    }
+    
+    // Load chi tiêu bất thường
+    async function loadUnusualExpenses() {
+        try {
+            const response = await fetch('/expenses/unusual');
+            const data = await response.json();
+            
+            const warningsContainer = document.getElementById('warningsContainer');
+            const unusualExpensesElement = document.getElementById('unusualExpenses');
+            
+            if (data.unusual_expenses && data.unusual_expenses.length > 0) {
+                unusualExpensesElement.innerHTML = data.unusual_expenses.map(expense => `
+                    <div class="alert alert-info mb-2">
+                        <strong>${expense.category_name}:</strong> ${expense.message}
+                        <div class="d-flex justify-content-between mt-2">
+                            <span>Trung bình: ${formatMoney(Math.round(expense.average_amount))} VND</span>
+                            <span>Hiện tại: ${formatMoney(expense.current_amount)} VND</span>
+                            <span>Tăng: +${Math.round(expense.percent_increase)}%</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                warningsContainer.classList.remove('d-none');
+            } else {
+                unusualExpensesElement.innerHTML = '';
+            }
+            
+            // Ẩn container nếu không có cảnh báo nào
+            if (unusualExpensesElement.innerHTML === '' && document.getElementById('budgetWarnings').innerHTML === '') {
+                warningsContainer.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải chi tiêu bất thường:', error);
+        }
+    }
+    
+    // Load đề xuất từ AI
+    async function loadAIRecommendations() {
+        try {
+            const response = await fetch('/ai/recommendations');
+            const data = await response.json();
+            
+            const recommendationsElement = document.getElementById('aiRecommendations');
+            
+            if (data.recommendations && data.recommendations.length > 0) {
+                recommendationsElement.innerHTML = data.recommendations.map(rec => `
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card recommendation-card h-100 ${rec.implemented ? 'border-success' : ''}">
+                            <div class="card-header ${rec.implemented ? 'bg-success text-white' : 'bg-light'}">
+                                <h5 class="card-title mb-0">
+                                    ${rec.implemented ? '<i class="bi bi-check-circle-fill"></i> ' : ''}
+                                    ${rec.title}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${rec.description}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">${rec.category_name}</span>
+                                    <span class="text-success fw-bold">Tiết kiệm: ${formatMoney(rec.potential_saving)} VND</span>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-sm ${rec.implemented ? 'btn-outline-success' : 'btn-success'} w-100" 
+                                        onclick="toggleRecommendation(${rec.id}, ${!rec.implemented})">
+                                    ${rec.implemented ? 'Đã thực hiện' : 'Đánh dấu đã thực hiện'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                recommendationsElement.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Chưa có đề xuất tiết kiệm nào. Hãy sử dụng ứng dụng thêm để nhận được đề xuất phù hợp.
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải đề xuất từ AI:', error);
+        }
+    }
+    
+    // Load thách thức tiết kiệm
+    async function loadSavingChallenges() {
+        try {
+            const response = await fetch('/savings/challenges');
+            const data = await response.json();
+            
+            const challengesElement = document.getElementById('savingChallenges');
+            
+            if (data.challenges && data.challenges.length > 0) {
+                challengesElement.innerHTML = data.challenges.map(challenge => `
+                    <div class="col-12 col-md-6">
+                        <div class="card challenge-card h-100 ${getStatusClass(challenge.status)}">
+                            <div class="card-header ${getStatusHeaderClass(challenge.status)}">
+                                <h5 class="card-title mb-0">
+                                    ${getStatusIcon(challenge.status)} ${challenge.title}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${challenge.description || 'Không có mô tả'}</p>
+                                <div class="progress mb-3" style="height: 20px;">
+                                    <div class="progress-bar ${getProgressBarClass(challenge.status)}" 
+                                         role="progressbar" style="width: ${challenge.percent_complete}%;" 
+                                         aria-valuenow="${challenge.percent_complete}" aria-valuemin="0" aria-valuemax="100">
+                                        <span class="progress-label">${Math.round(challenge.percent_complete)}%</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-secondary">${challenge.category_name}</span>
+                                    <span class="text-muted">Còn ${challenge.days_remaining} ngày</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Hiện tại: <strong>${formatMoney(challenge.current_amount)} VND</strong></span>
+                                    <span>Mục tiêu: <strong>${formatMoney(challenge.target_amount)} VND</strong></span>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-grow-1" onclick="updateChallenge(${challenge.id})">
+                                        <i class="bi bi-plus-circle"></i> Cập nhật tiến độ
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteChallenge(${challenge.id})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                challengesElement.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Bạn chưa có thách thức tiết kiệm nào. Hãy tạo thách thức mới để bắt đầu tiết kiệm!
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải thách thức tiết kiệm:', error);
+        }
+    }
+    
+    // Load dự báo chi tiêu
+    async function loadExpenseForecasts() {
+        try {
+            const response = await fetch('/expenses/forecast');
+            const data = await response.json();
+            
+            const forecastsElement = document.getElementById('expenseForecasts');
+            
+            if (data.forecasts && data.forecasts.length > 0) {
+                // Sắp xếp theo số tiền giảm dần
+                data.forecasts.sort((a, b) => b.amount - a.amount);
+                
+                forecastsElement.innerHTML = data.forecasts.map(forecast => `
+                    <div class="card forecast-card mb-3 ${getConfidenceClass(forecast.confidence)}">
+                        <div class="card-body">
+                            <h5 class="card-title">${forecast.category_name}</h5>
+                            <h3 class="text-primary mb-3">${formatMoney(forecast.amount)} VND</h3>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Tháng ${forecast.month}/${forecast.year}</span>
+                                <span class="badge ${getConfidenceBadge(forecast.confidence)}">
+                                    Độ tin cậy: ${Math.round(forecast.confidence * 100)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                forecastsElement.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa đủ dữ liệu để dự báo chi tiêu. Hãy sử dụng ứng dụng thêm để có dự báo chính xác.
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải dự báo chi tiêu:', error);
+        }
+    }
+    
+    // Load phân tích mẫu chi tiêu
+    async function loadExpensePatterns() {
+        try {
+            const response = await fetch('/expenses/analysis');
+            const data = await response.json();
+            
+            // Chi tiêu định kỳ
+            const recurringElement = document.getElementById('recurringExpenses');
+            if (data.recurring_expenses && data.recurring_expenses.length > 0) {
+                recurringElement.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Danh mục</th>
+                                    <th>Tần suất</th>
+                                    <th>Số tiền trung bình</th>
+                                    <th>Tổng chi tiêu</th>
+                                    <th>Số lần chi tiêu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.recurring_expenses.map(expense => `
+                                    <tr>
+                                        <td>${expense.category_name}</td>
+                                        <td>${translateFrequency(expense.frequency)}</td>
+                                        <td>${formatMoney(expense.avg_amount)} VND</td>
+                                        <td>${formatMoney(expense.total_amount)} VND</td>
+                                        <td>${expense.expense_count}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                recurringElement.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa phát hiện mẫu chi tiêu định kỳ nào.
+                    </div>
+                `;
+            }
+            
+            // Chi tiêu theo mùa
+            const seasonalElement = document.getElementById('seasonalExpenses');
+            if (data.seasonal_expenses && data.seasonal_expenses.length > 0) {
+                seasonalElement.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Danh mục</th>
+                                    <th>Thời gian</th>
+                                    <th>Chi tiêu</th>
+                                    <th>Trung bình</th>
+                                    <th>Tăng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.seasonal_expenses.map(expense => `
+                                    <tr>
+                                        <td>${expense.category_name}</td>
+                                        <td>${expense.month}/${expense.year}</td>
+                                        <td>${formatMoney(expense.amount)} VND</td>
+                                        <td>${formatMoney(Math.round(expense.avg_amount))} VND</td>
+                                        <td class="text-danger">+${Math.round(expense.percent_increase)}%</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                seasonalElement.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa phát hiện mẫu chi tiêu theo mùa nào.
+                    </div>
+                `;
+            }
+            
+            // Chi tiêu bốc đồng
+            const impulseElement = document.getElementById('impulseExpenses');
+            if (data.impulse_expenses && data.impulse_expenses.length > 0) {
+                impulseElement.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Danh mục</th>
+                                    <th>Ngày chi tiêu</th>
+                                    <th>Số tiền</th>
+                                    <th>Trung bình</th>
+                                    <th>Cao hơn</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.impulse_expenses.map(expense => `
+                                    <tr>
+                                        <td>${expense.category_name}</td>
+                                        <td>${new Date(expense.date).toLocaleDateString('vi-VN')}</td>
+                                        <td>${formatMoney(expense.amount)} VND</td>
+                                        <td>${formatMoney(Math.round(expense.avg_amount))} VND</td>
+                                        <td class="text-danger">+${Math.round(expense.percent_higher)}%</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                impulseElement.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa phát hiện mẫu chi tiêu bốc đồng nào.
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải phân tích mẫu chi tiêu:', error);
+        }
+    }
+    
+    // Xử lý tạo thách thức tiết kiệm mới
+    document.getElementById('saveChallenge').addEventListener('click', async () => {
+        const title = document.getElementById('challengeTitle').value.trim();
+        const description = document.getElementById('challengeDescription').value.trim();
+        const amountStr = document.getElementById('challengeAmount').value.replace(/,/g, '');
+        const categoryID = document.getElementById('challengeCategory').value;
+        const endDate = document.getElementById('challengeEndDate').value;
+        const errorElement = document.getElementById('challengeError');
+        
+        // Kiểm tra dữ liệu
+        if (!title) {
+            errorElement.textContent = 'Vui lòng nhập tiêu đề thách thức';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        if (!amountStr || isNaN(amountStr) || parseInt(amountStr) <= 0) {
+            errorElement.textContent = 'Vui lòng nhập số tiền mục tiêu hợp lệ';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        if (!categoryID) {
+            errorElement.textContent = 'Vui lòng chọn danh mục';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        if (!endDate) {
+            errorElement.textContent = 'Vui lòng chọn ngày kết thúc';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        // Kiểm tra ngày kết thúc
+        const today = new Date();
+        const endDateObj = new Date(endDate);
+        if (endDateObj <= today) {
+            errorElement.textContent = 'Ngày kết thúc phải sau ngày hiện tại';
+            errorElement.classList.remove('d-none');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/savings/challenges', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    target_amount: parseInt(amountStr),
+                    category_id: parseInt(categoryID),
+                    end_date: endDate,
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                errorElement.textContent = result.error || 'Có lỗi xảy ra khi tạo thách thức';
+                errorElement.classList.remove('d-none');
+                return;
+            }
+            
+            // Đóng modal và làm mới danh sách thách thức
+            const modal = bootstrap.Modal.getInstance(document.getElementById('newChallengeModal'));
+            modal.hide();
+            
+            // Reset form
+            document.getElementById('challengeForm').reset();
+            errorElement.classList.add('d-none');
+            
+            // Thiết lập lại ngày mặc định
+            const thirtyDaysLater = new Date();
+            thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+            document.getElementById('challengeEndDate').value = thirtyDaysLater.toISOString().split('T')[0];
+            
+            // Làm mới danh sách thách thức
+            loadSavingChallenges();
+            
+            // Hiển thị thông báo thành công
+            alert('Tạo thách thức tiết kiệm thành công!');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            errorElement.textContent = 'Có lỗi xảy ra khi kết nối đến máy chủ';
+            errorElement.classList.remove('d-none');
+        }
+    });
+    
+    // Các hàm hỗ trợ
+    function getStatusClass(status) {
+        switch (status) {
+            case 'completed': return 'border-success';
+            case 'failed': return 'border-danger';
+            default: return '';
+        }
+    }
+    
+    function getStatusHeaderClass(status) {
+        switch (status) {
+            case 'completed': return 'bg-success text-white';
+            case 'failed': return 'bg-danger text-white';
+            default: return 'bg-light';
+        }
+    }
+    
+    function getStatusIcon(status) {
+        switch (status) {
+            case 'completed': return '<i class="bi bi-trophy-fill"></i>';
+            case 'failed': return '<i class="bi bi-x-circle-fill"></i>';
+            default: return '<i class="bi bi-hourglass-split"></i>';
+        }
+    }
+    
+    function getProgressBarClass(status) {
+        switch (status) {
+            case 'completed': return 'bg-success';
+            case 'failed': return 'bg-danger';
+            default: return 'bg-primary';
+        }
+    }
+    
+    function getConfidenceClass(confidence) {
+        if (confidence >= 0.7) return 'high-confidence';
+        if (confidence >= 0.4) return 'medium-confidence';
+        return 'low-confidence';
+    }
+    
+    function getConfidenceBadge(confidence) {
+        if (confidence >= 0.7) return 'bg-success';
+        if (confidence >= 0.4) return 'bg-warning text-dark';
+        return 'bg-danger';
+    }
+    
+    function translateFrequency(frequency) {
+        switch (frequency) {
+            case 'daily': return 'Hàng ngày';
+            case 'weekly': return 'Hàng tuần';
+            case 'biweekly': return 'Hai tuần một lần';
+            case 'monthly': return 'Hàng tháng';
+            default: return 'Không đều';
+        }
+    }
+    
+    // Các hàm xử lý sự kiện (sẽ được triển khai sau)
+    function toggleRecommendation(id, implemented) {
+        console.log('Toggle recommendation', id, implemented);
+        // TODO: Implement this function
+    }
+    
+    function updateChallenge(id) {
+        console.log('Update challenge', id);
+        // TODO: Implement this function
+    }
+    
+    function deleteChallenge(id) {
+        console.log('Delete challenge', id);
+        // TODO: Implement this function
+    }
+</script>
+</body>
+</html>
