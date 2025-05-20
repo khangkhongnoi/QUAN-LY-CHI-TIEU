@@ -178,6 +178,26 @@
         </div>
     </div>
     
+    <!-- Phân tích tài chính toàn diện -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-graph-up-arrow"></i> Phân tích tài chính toàn diện
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row" id="financialInsights">
+                <!-- Phân tích tài chính sẽ được thêm bằng JS -->
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2">Đang phân tích dữ liệu tài chính của bạn...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Phân tích mẫu chi tiêu -->
     <div class="card shadow mb-4">
         <div class="card-header bg-secondary text-white">
@@ -318,6 +338,7 @@
         loadSavingChallenges();
         loadExpenseForecasts();
         loadExpensePatterns();
+        loadFinancialInsights();
         
         // Thiết lập ngày mặc định cho trường ngày kết thúc thách thức là 30 ngày sau
         const thirtyDaysLater = new Date();
@@ -417,8 +438,28 @@
     // Load đề xuất từ AI
     async function loadAIRecommendations() {
         try {
-            const response = await fetch('/ai/recommendations');
-            const data = await response.json();
+            // Thử sử dụng API mới trước
+            let response;
+            let data;
+            let useNewAPI = true;
+            
+            try {
+                response = await fetch('/ai/smart-recommendations');
+                data = await response.json();
+                if (!data.recommendations || data.recommendations.length === 0) {
+                    // Nếu API mới không có dữ liệu, thử API cũ
+                    useNewAPI = false;
+                }
+            } catch (e) {
+                console.log('API mới không khả dụng, sử dụng API cũ');
+                useNewAPI = false;
+            }
+            
+            // Nếu API mới không khả dụng hoặc không có dữ liệu, sử dụng API cũ
+            if (!useNewAPI) {
+                response = await fetch('/ai/recommendations');
+                data = await response.json();
+            }
             
             const recommendationsElement = document.getElementById('aiRecommendations');
             
@@ -459,6 +500,16 @@
             }
         } catch (error) {
             console.error('Lỗi khi tải đề xuất từ AI:', error);
+            
+            // Hiển thị thông báo lỗi
+            const recommendationsElement = document.getElementById('aiRecommendations');
+            recommendationsElement.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Đã xảy ra lỗi khi tải đề xuất. Vui lòng thử lại sau.
+                    </div>
+                </div>
+            `;
         }
     }
     
@@ -830,20 +881,304 @@
         }
     }
     
-    // Các hàm xử lý sự kiện (sẽ được triển khai sau)
-    function toggleRecommendation(id, implemented) {
-        console.log('Toggle recommendation', id, implemented);
-        // TODO: Implement this function
+    // Load phân tích tài chính toàn diện
+    async function loadFinancialInsights() {
+        try {
+            const response = await fetch('/ai/financial-insights');
+            const data = await response.json();
+            
+            const insightsElement = document.getElementById('financialInsights');
+            
+            if (data.health_details) {
+                const healthScore = data.health_details.health_score;
+                const status = data.health_details.status;
+                const factors = data.health_details.factors || [];
+                
+                let statusClass = 'success';
+                if (healthScore < 50) {
+                    statusClass = 'danger';
+                } else if (healthScore < 70) {
+                    statusClass = 'warning';
+                }
+                
+                let html = `
+                    <div class="col-12 col-lg-4 mb-4">
+                        <div class="card h-100 border-${statusClass}">
+                            <div class="card-header bg-${statusClass} text-white">
+                                <h5 class="card-title mb-0">Điểm sức khỏe tài chính</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="display-1 fw-bold text-${statusClass} mb-3">${healthScore}</div>
+                                <div class="progress mb-3" style="height: 20px;">
+                                    <div class="progress-bar bg-${statusClass}" role="progressbar" 
+                                         style="width: ${healthScore}%;" aria-valuenow="${healthScore}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        <span class="progress-label">${healthScore}%</span>
+                                    </div>
+                                </div>
+                                <p class="lead">Tình trạng: <strong>${status.toUpperCase()}</strong></p>
+                                <div class="d-flex justify-content-between text-muted">
+                                    <span>Tỷ lệ chi tiêu/thu nhập: ${data.health_details.expense_income_ratio.toFixed(1)}%</span>
+                                    <span>Tỷ lệ tiết kiệm: ${data.health_details.saving_rate.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 col-lg-8 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Các yếu tố ảnh hưởng</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Yếu tố</th>
+                                                <th>Giá trị</th>
+                                                <th>Điểm</th>
+                                                <th>Mô tả</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${factors.map(factor => `
+                                                <tr>
+                                                    <td><strong>${factor.name}</strong></td>
+                                                    <td>${factor.value}</td>
+                                                    <td><span class="badge bg-primary">${factor.score}</span></td>
+                                                    <td>${factor.description}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Thêm phần rủi ro nếu có
+                if (data.risk_factors && data.risk_factors.length > 0) {
+                    html += `
+                        <div class="col-12 mb-4">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="card-title mb-0">Yếu tố rủi ro</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        ${data.risk_factors.map(risk => `
+                                            <div class="col-12 col-md-6 mb-3">
+                                                <div class="alert alert-danger">
+                                                    <h6 class="alert-heading">${risk.severity.toUpperCase()}</h6>
+                                                    <p>${risk.message}</p>
+                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                            onclick="dismissRiskWarning(${risk.id})">
+                                                        Đã hiểu
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Thêm phần hồ sơ người dùng nếu có
+                if (data.user_profile) {
+                    html += `
+                        <div class="col-12 col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="card-title mb-0">Hồ sơ người dùng</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Phong cách chi tiêu
+                                            <span class="badge bg-primary">${data.user_profile.spending_style}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Khả năng chấp nhận rủi ro
+                                            <span class="badge bg-primary">${data.user_profile.risk_tolerance}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Độ ổn định thu nhập
+                                            <span class="badge bg-primary">${data.user_profile.income_stability}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Khả năng tiết kiệm hàng tháng
+                                            <span class="badge bg-success">${formatMoney(data.user_profile.saving_capacity)} VND</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Mức độ tuân thủ ngân sách
+                                            <span class="badge bg-primary">${data.user_profile.budget_adherence.toFixed(1)}%</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Thêm phần xu hướng thị trường nếu có
+                if (data.market_trends) {
+                    html += `
+                        <div class="col-12 col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="card-title mb-0">Xu hướng thị trường</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Tỷ lệ lạm phát:</span>
+                                            <span class="fw-bold">${data.market_trends.inflation_rate}%</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Lãi suất ngân hàng:</span>
+                                            <span class="fw-bold">${data.market_trends.interest_rates}%</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <h6 class="mt-4">Yếu tố theo mùa</h6>
+                                    <div class="list-group">
+                                        ${data.market_trends.seasonal_factors ? data.market_trends.seasonal_factors.map(factor => `
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">${factor.name}</h6>
+                                                    <small class="text-muted">Tác động: ${factor.impact}</small>
+                                                </div>
+                                                <p class="mb-1">${factor.description}</p>
+                                            </div>
+                                        `).join('') : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                insightsElement.innerHTML = html;
+            } else {
+                insightsElement.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Chưa có phân tích tài chính nào. Hãy sử dụng ứng dụng thêm để nhận được phân tích phù hợp.
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải phân tích tài chính:', error);
+            
+            // Hiển thị thông báo lỗi
+            const insightsElement = document.getElementById('financialInsights');
+            insightsElement.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Đã xảy ra lỗi khi tải phân tích tài chính. Vui lòng thử lại sau.
+                    </div>
+                </div>
+            `;
+        }
     }
     
-    function updateChallenge(id) {
+    // Các hàm xử lý sự kiện
+    async function toggleRecommendation(id, implemented) {
+        try {
+            // Thử sử dụng API mới trước
+            let response;
+            let useNewAPI = true;
+            
+            try {
+                response = await fetch('/ai/toggle-recommendation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: id,
+                        implemented: implemented
+                    })
+                });
+                
+                if (!response.ok) {
+                    useNewAPI = false;
+                }
+            } catch (e) {
+                console.log('API mới không khả dụng, sử dụng phương pháp cũ');
+                useNewAPI = false;
+            }
+            
+            // Nếu API mới không khả dụng, sử dụng phương pháp cũ (reload trang)
+            if (!useNewAPI) {
+                // Trong phiên bản cũ, chỉ reload trang để cập nhật UI
+                window.location.reload();
+                return;
+            }
+            
+            // Nếu API mới thành công, cập nhật UI
+            const data = await response.json();
+            if (data.recommendation) {
+                // Cập nhật UI mà không cần reload trang
+                loadAIRecommendations();
+            }
+        } catch (error) {
+            console.error('Lỗi khi cập nhật trạng thái đề xuất:', error);
+            alert('Không thể cập nhật trạng thái đề xuất. Vui lòng thử lại.');
+        }
+    }
+    
+    async function updateChallenge(id) {
+        // Hiển thị modal cập nhật tiến độ
         console.log('Update challenge', id);
         // TODO: Implement this function
     }
     
-    function deleteChallenge(id) {
-        console.log('Delete challenge', id);
-        // TODO: Implement this function
+    async function deleteChallenge(id) {
+        if (!confirm('Bạn có chắc chắn muốn xóa thách thức này?')) return;
+        
+        try {
+            const response = await fetch(`/savings/challenges/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadSavingChallenges();
+            } else {
+                alert('Không thể xóa thách thức. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi khi xóa thách thức:', error);
+        }
+    }
+    
+    // Bỏ qua cảnh báo rủi ro
+    async function dismissRiskWarning(id) {
+        try {
+            const response = await fetch('/ai/dismiss-risk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: id
+                })
+            });
+            
+            if (response.ok) {
+                // Tải lại phân tích tài chính
+                loadFinancialInsights();
+            } else {
+                alert('Không thể bỏ qua cảnh báo. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi khi bỏ qua cảnh báo:', error);
+        }
     }
 </script>
 </body>

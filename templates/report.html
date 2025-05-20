@@ -455,7 +455,7 @@
     }
     
     // Load báo cáo theo khoảng thời gian
-    async function loadDateRangeReport() {
+    async function loadDateRangeReport(page = 1) {
         try {
             const startDate = document.getElementById('start_date').value;
             const endDate = document.getElementById('end_date').value;
@@ -465,12 +465,23 @@
                 return;
             }
             
-            const response = await fetch(`/report/date-range?start_date=${startDate}&end_date=${endDate}`);
+            const response = await fetch(`/report/date-range?start_date=${startDate}&end_date=${endDate}&page=${page}&page_size=10`);
             const data = await response.json();
+            
+            // Thêm event listener cho các nút phân trang sau khi render
+            setTimeout(() => {
+                document.querySelectorAll('#dateRangeReport .pagination .page-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const page = parseInt(this.dataset.page);
+                        loadDateRangeReport(page);
+                    });
+                });
+            }, 100);
             
             const container = document.getElementById('dateRangeReport');
             
-            if (data.expenses.length === 0) {
+            if (!data.expenses || data.expenses.length === 0) {
                 container.innerHTML = `
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Không có chi tiêu nào trong khoảng thời gian từ 
@@ -484,6 +495,42 @@
             // Định dạng khoảng thời gian
             const formattedStartDate = new Date(startDate).toLocaleDateString('vi-VN');
             const formattedEndDate = new Date(endDate).toLocaleDateString('vi-VN');
+            
+            // Tạo HTML cho phân trang
+            let paginationHtml = '';
+            if (data.total_pages > 1) {
+                paginationHtml = `
+                    <nav aria-label="Phân trang chi tiêu">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item ${data.page <= 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${data.page - 1}" aria-label="Trang trước">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                `;
+                
+                // Hiển thị tối đa 5 trang
+                const startPage = Math.max(1, data.page - 2);
+                const endPage = Math.min(data.total_pages, startPage + 4);
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHtml += `
+                        <li class="page-item ${i === data.page ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+                
+                paginationHtml += `
+                            <li class="page-item ${data.page >= data.total_pages ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${data.page + 1}" aria-label="Trang sau">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                `;
+            }
             
             container.innerHTML = `
                 <div class="alert alert-success mb-3">
@@ -526,6 +573,12 @@
                         </tr>
                         </tfoot>
                     </table>
+                </div>
+                
+                ${paginationHtml}
+                
+                <div class="text-muted text-center mt-2">
+                    Hiển thị ${data.expenses.length} trong tổng số ${data.total_count} chi tiêu
                 </div>
             `;
         } catch (error) {

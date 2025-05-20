@@ -14,6 +14,13 @@ services:
       - DB_PASSWORD=khangttcnpm2024
       - DB_NAME=expense_tracker
       - DB_PORT=5432
+      - TZ=Asia/Ho_Chi_Minh
+      # Email configuration
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=cvkhang@vttu.edu.vn
+      - SMTP_PASSWORD=fcdk fycz exqm duix
+      - FROM_EMAIL=your-email@gmail.com
     volumes:
       - ./static/uploads:/app/static/uploads
     networks:

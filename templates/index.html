@@ -252,6 +252,11 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Phân trang -->
+            <div id="expensesPagination" class="mt-3">
+                <!-- Phân trang sẽ được thêm bằng JS -->
+            </div>
         </div>
     </div>
 </div>
@@ -470,7 +475,7 @@
     });
 
     // Load dữ liệu
-    async function loadData() {
+    async function loadData(page = 1) {
         await Promise.all([
             fetch('/summary').then(res => res.json()).then(data => {
                 document.getElementById('dailyTotal').textContent =
@@ -481,8 +486,75 @@
                     `${data.monthly.toLocaleString()} VND`;
             }),
 
-            fetch('/expenses').then(res => res.json()).then(expenses => {
+            fetch(`/expenses?page=${page}&page_size=10`).then(res => res.json()).then(data => {
                 const tbody = document.getElementById('expensesList');
+                
+                // Kiểm tra xem response có cấu trúc mới không
+                const expenses = data.expenses || data;
+                
+                if (!Array.isArray(expenses)) {
+                    console.error('Dữ liệu chi tiêu không phải là mảng:', expenses);
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Không thể tải dữ liệu chi tiêu</td></tr>';
+                    return;
+                }
+                
+                // Hiển thị thông tin phân trang nếu có
+                if (data.page && data.total_pages) {
+                    const paginationContainer = document.getElementById('expensesPagination');
+                    
+                    // Tạo HTML cho phân trang
+                    let paginationHtml = '';
+                    if (data.total_pages > 1) {
+                        paginationHtml = `
+                            <nav aria-label="Phân trang chi tiêu">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item ${data.page <= 1 ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" data-page="${data.page - 1}" aria-label="Trang trước">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                        `;
+                        
+                        // Hiển thị tối đa 5 trang
+                        const startPage = Math.max(1, data.page - 2);
+                        const endPage = Math.min(data.total_pages, startPage + 4);
+                        
+                        for (let i = startPage; i <= endPage; i++) {
+                            paginationHtml += `
+                                <li class="page-item ${i === data.page ? 'active' : ''}">
+                                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                                </li>
+                            `;
+                        }
+                        
+                        paginationHtml += `
+                                    <li class="page-item ${data.page >= data.total_pages ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" data-page="${data.page + 1}" aria-label="Trang sau">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                            <div class="text-muted text-center">
+                                Hiển thị ${expenses.length} trong tổng số ${data.total_count} chi tiêu
+                            </div>
+                        `;
+                    }
+                    
+                    paginationContainer.innerHTML = paginationHtml;
+                    
+                    // Thêm event listener cho các nút phân trang
+                    setTimeout(() => {
+                        document.querySelectorAll('#expensesPagination .pagination .page-link').forEach(link => {
+                            link.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                const page = parseInt(this.dataset.page);
+                                loadData(page);
+                            });
+                        });
+                    }, 100);
+                }
+                
                 tbody.innerHTML = expenses.map(expense => `
                         <tr>
                             <td>${expense.Category.Name}</td>

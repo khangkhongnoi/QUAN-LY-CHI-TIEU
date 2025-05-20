@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiết kiệm tự động hàng ngày - Quản lý chi tiêu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .savings-card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        .savings-card:hover {
+            transform: translateY(-5px);
+        }
+        .info-icon {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+        .daily-limit {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #198754;
+        }
+        .savings-description {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Tiết kiệm tự động hàng ngày</h1>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card savings-card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-piggy-bank info-icon me-3"></i>
+                            <h2 class="card-title mb-0">Cách thức hoạt động</h2>
+                        </div>
+                        <p class="savings-description">
+                            Tính năng tiết kiệm tự động hàng ngày giúp bạn tiết kiệm tiền dựa trên chi tiêu hàng ngày. 
+                            Hệ thống sẽ tự động tính toán số tiền tiết kiệm dựa trên quy tắc sau:
+                        </p>
+                        <ul class="savings-description">
+                            <li>Hạn mức chi tiêu hàng ngày: <span class="daily-limit">100,000 VND</span></li>
+                            <li>Nếu tổng chi tiêu trong ngày dưới 100,000 VND, phần chênh lệch sẽ được tự động thêm vào mục tiêu tiết kiệm</li>
+                            <li>Nếu tổng chi tiêu trong ngày vượt quá 100,000 VND, không có tiền tiết kiệm nào được thêm vào</li>
+                        </ul>
+                        <p class="savings-description">
+                            Vào cuối mỗi ngày (23:59), hệ thống sẽ tự động tính toán và thêm tiền tiết kiệm vào mục tiêu "Tiết kiệm tự động hàng ngày".
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="card savings-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-calculator info-icon me-3"></i>
+                            <h2 class="card-title mb-0">Công thức tính toán</h2>
+                        </div>
+                        <div class="alert alert-primary">
+                            <strong>Tiền tiết kiệm = 100,000 VND - Tổng chi tiêu trong ngày</strong> (nếu tổng chi tiêu < 100,000 VND)
+                        </div>
+                        <p class="savings-description">
+                            <strong>Ví dụ:</strong>
+                        </p>
+                        <ul class="savings-description">
+                            <li>Nếu hôm nay bạn chi tiêu 70,000 VND → Tiền tiết kiệm = 30,000 VND</li>
+                            <li>Nếu hôm nay bạn chi tiêu 95,000 VND → Tiền tiết kiệm = 5,000 VND</li>
+                            <li>Nếu hôm nay bạn chi tiêu 120,000 VND → Tiền tiết kiệm = 0 VND</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card savings-card mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Tính toán ngay</h3>
+                        <p>Kiểm tra số tiền tiết kiệm dựa trên chi tiêu hôm nay của bạn.</p>
+                        <button id="calculateBtn" class="btn btn-primary w-100">Tính toán tiết kiệm hôm nay</button>
+                        <div id="resultArea" class="mt-3 d-none">
+                            <div class="alert alert-success">
+                                <h4 class="alert-heading">Kết quả tính toán</h4>
+                                <p>Số tiền tiết kiệm hôm nay: <strong id="savingsAmount">0</strong> VND</p>
+                                <p class="mb-0" id="savingsMessage"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card savings-card">
+                    <div class="card-body">
+                        <h3 class="card-title">Lợi ích</h3>
+                        <ul class="savings-description">
+                            <li>Khuyến khích kiểm soát chi tiêu hàng ngày</li>
+                            <li>Tự động tích lũy tiền tiết kiệm</li>
+                            <li>Tạo thói quen tiết kiệm dựa trên chi tiêu thực tế</li>
+                            <li>Giúp đạt được mục tiêu tài chính dài hạn</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            // Show loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tính toán...';
+            this.disabled = true;
+            
+            // Call API to calculate savings
+            fetch('/savings/calculate-daily')
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button
+                    this.innerHTML = 'Tính toán tiết kiệm hôm nay';
+                    this.disabled = false;
+                    
+                    // Show result
+                    document.getElementById('resultArea').classList.remove('d-none');
+                    document.getElementById('savingsAmount').textContent = data.savings_amount.toLocaleString('vi-VN');
+                    
+                    // Set message based on savings amount
+                    if (data.savings_amount > 0) {
+                        document.getElementById('savingsMessage').textContent = 'Chúc mừng! Số tiền này đã được thêm vào mục tiêu tiết kiệm của bạn.';
+                    } else {
+                        document.getElementById('savingsMessage').textContent = 'Hôm nay chi tiêu của bạn đã vượt quá 100,000 VND nên không có tiền tiết kiệm.';
+                    }
+                })
+                .catch(error => {
+                    // Reset button
+                    this.innerHTML = 'Tính toán tiết kiệm hôm nay';
+                    this.disabled = false;
+                    
+                    // Show error
+                    alert('Có lỗi xảy ra khi tính toán tiết kiệm. Vui lòng thử lại sau.');
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+</body>
+</html>

@@ -158,25 +158,61 @@ func GetExpensesByDateRange(c *gin.Context) {
 		return
 	}
 
-	// Truy vấn chi tiêu trong khoảng thời gian
+	// Lấy tham số phân trang từ query
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+
+	// Chuyển đổi tham số phân trang
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	// Tính offset
+	offset := (page - 1) * pageSize
+
+	// Đếm tổng số bản ghi để tính tổng số trang
+	var total int64
+	database.DB.Model(&models.Expense{}).
+		Where("user_id = ? AND expense_date >= ? AND expense_date <= ? AND deleted_at IS NULL",
+			userID, startDate, endDate).
+		Count(&total)
+
+	// Tính tổng số trang
+	totalPages := (int(total) + pageSize - 1) / pageSize
+
+	// Truy vấn chi tiêu trong khoảng thời gian với phân trang
 	var expenses []models.Expense
 	database.DB.Preload("Category").
 		Where("user_id = ? AND expense_date >= ? AND expense_date <= ? AND deleted_at IS NULL",
 			userID, startDate, endDate).
 		Order("expense_date DESC").
+		Limit(pageSize).
+		Offset(offset).
 		Find(&expenses)
 
-	// Tính tổng chi tiêu
+	// Tính tổng chi tiêu (cần truy vấn riêng để có tổng chính xác)
 	var totalAmount int
-	for _, expense := range expenses {
-		totalAmount += expense.Amount
-	}
+	database.DB.Model(&models.Expense{}).
+		Where("user_id = ? AND expense_date >= ? AND expense_date <= ? AND deleted_at IS NULL",
+			userID, startDate, endDate).
+		Select("COALESCE(SUM(amount), 0) as total").
+		Scan(&totalAmount)
 
 	c.JSON(http.StatusOK, gin.H{
-		"expenses":  expenses,
-		"total":     totalAmount,
-		"startDate": startDate,
-		"endDate":   endDate,
+		"expenses":    expenses,
+		"total":       totalAmount,
+		"startDate":   startDate,
+		"endDate":     endDate,
+		"page":        page,
+		"page_size":   pageSize,
+		"total_pages": totalPages,
+		"total_count": total,
 	})
 }
 

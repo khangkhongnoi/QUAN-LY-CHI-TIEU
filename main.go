@@ -5,6 +5,7 @@ import (
 	"QUAN-LY-CHI-TIEU/pkg/handlers"
 	"QUAN-LY-CHI-TIEU/pkg/middleware"
 	"QUAN-LY-CHI-TIEU/pkg/models"
+	"QUAN-LY-CHI-TIEU/pkg/services"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -139,9 +140,38 @@ func main() {
 		authorized.GET("/savings/challenges", handlers.GetSavingChallenges)
 		authorized.POST("/savings/challenges", handlers.CreateSavingChallenge)
 		authorized.GET("/expenses/analysis", handlers.AnalyzeExpensePatterns)
+		
+		// API AI cũ
 		authorized.GET("/ai/recommendations", handlers.GetAIRecommendations)
+		
+		// API AI nâng cao mới
+		authorized.GET("/ai/smart-recommendations", handlers.GetSmartSavingRecommendations)
+		authorized.GET("/ai/budget-optimization", handlers.GetSmartBudgetOptimization)
+		authorized.GET("/ai/financial-insights", handlers.GetComprehensiveFinancialInsights)
+		authorized.GET("/ai/user-profile", handlers.GetUserBehaviorProfile)
+		authorized.GET("/ai/market-trends", handlers.GetMarketTrendsInfo)
+		authorized.POST("/ai/toggle-recommendation", handlers.ToggleRecommendationImplementation)
+		authorized.POST("/ai/dismiss-risk", handlers.DismissRiskWarning)
+		
+		// API phân tích tài chính thông minh mới
+		authorized.GET("/financial/insights", handlers.GetFinancialInsights)
+		authorized.GET("/financial/health-score", handlers.GetFinancialHealthScore)
+		authorized.GET("/financial/smart-budget", handlers.GetSmartBudgetSuggestions)
+		
+		// API nhắc nhở chi tiêu (chỉ dành cho admin và testing)
+		authorized.GET("/admin/test-reminder", handlers.TestExpenseReminder)
+		
+		// API tiết kiệm tự động hàng ngày
+		authorized.GET("/savings/daily-info", handlers.GetDailySavingsInfo)
+		authorized.GET("/savings/calculate-daily", handlers.TestDailySavings)
+		authorized.GET("/admin/process-all-savings", handlers.ProcessAllUsersDailySavings)
+		authorized.GET("/savings/daily", handlers.ShowDailySavingsPage)
 	}
 
+	// Khởi tạo và chạy scheduler service cho email nhắc nhở
+	scheduler := services.NewSchedulerService()
+	scheduler.Start()
+	
 	// Khởi chạy server
 	log.Println("Server running on :80")
 	router.Run(":80")

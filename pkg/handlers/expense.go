@@ -193,13 +193,49 @@ func GetExpenses(c *gin.Context) {
 		return
 	}
 
+	// Lấy tham số phân trang từ query
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+
+	// Chuyển đổi tham số phân trang
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	// Tính offset
+	offset := (page - 1) * pageSize
+
+	// Đếm tổng số bản ghi để tính tổng số trang
+	var total int64
+	database.DB.Model(&models.Expense{}).
+		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Count(&total)
+
+	// Tính tổng số trang
+	totalPages := (int(total) + pageSize - 1) / pageSize
+
+	// Truy vấn dữ liệu với phân trang
 	var expenses []models.Expense
 	database.DB.Preload("Category").
 		Where("user_id = ? AND deleted_at IS NULL", userID).
 		Order("created_at DESC").
+		Limit(pageSize).
+		Offset(offset).
 		Find(&expenses)
 
-	c.JSON(http.StatusOK, expenses)
+	c.JSON(http.StatusOK, gin.H{
+		"expenses":    expenses,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
+		"total_pages": totalPages,
+	})
 }
 
 func GetCategories(c *gin.Context) {

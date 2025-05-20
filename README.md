@@ -11,6 +11,8 @@
 - Xem thống kê chi tiêu theo ngày, tháng
 - Biểu đồ chi tiêu theo ngày trong tháng
 - Tải lên hình ảnh hóa đơn
+- Nhắc nhở qua email khi chưa thêm chi tiêu trong ngày
+- Tiết kiệm tự động dựa trên chi tiêu hàng ngày
 
 ## Cài đặt và Chạy
 
@@ -47,6 +49,13 @@
    export DB_PASSWORD=khangttcnpm2024
    export DB_NAME=expense_tracker
    export DB_PORT=5432
+   
+   # Cấu hình email (tùy chọn)
+   export SMTP_SERVER=smtp.gmail.com
+   export SMTP_PORT=587
+   export SMTP_USERNAME=your-email@gmail.com
+   export SMTP_PASSWORD=your-app-password
+   export FROM_EMAIL=your-email@gmail.com
    ```
 
 4. Chạy ứng dụng:

@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"QUAN-LY-CHI-TIEU/pkg/ai"
 	"QUAN-LY-CHI-TIEU/pkg/database"
 	"QUAN-LY-CHI-TIEU/pkg/models"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"math"
 	"net/http"
 	"sort"
@@ -667,11 +669,17 @@ func GetAIRecommendations(c *gin.Context) {
 	var savedRecommendations []models.AIRecommendation
 	database.DB.Where("user_id = ?", userID).Find(&savedRecommendations)
 
-	// Tạo đề xuất mới dựa trên phân tích chi tiêu
-	generateNewRecommendations(userID.(uint))
+	// Kiểm tra xem có cần tạo đề xuất mới không
+	if len(savedRecommendations) == 0 || isRecommendationOutdated(savedRecommendations) {
+		// Sử dụng AI mới để tạo đề xuất
+		generateSmartRecommendations(userID.(uint))
+	} else {
+		// Sử dụng phương pháp cũ nếu AI mới không khả dụng
+		generateNewRecommendations(userID.(uint))
+	}
 
 	// Lấy lại tất cả đề xuất sau khi đã tạo mới
-	database.DB.Where("user_id = ?", userID).Find(&savedRecommendations)
+	database.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&savedRecommendations)
 
 	// Thêm thông tin danh mục
 	var result []gin.H
@@ -694,6 +702,48 @@ func GetAIRecommendations(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"recommendations": result,
 	})
+}
+
+// isRecommendationOutdated kiểm tra xem đề xuất có cũ không
+func isRecommendationOutdated(recommendations []models.AIRecommendation) bool {
+	if len(recommendations) == 0 {
+		return true
+	}
+	
+	// Sắp xếp theo thời gian tạo giảm dần
+	sort.Slice(recommendations, func(i, j int) bool {
+		return recommendations[i].CreatedAt.After(recommendations[j].CreatedAt)
+	})
+	
+	// Kiểm tra xem đề xuất mới nhất có cũ hơn 7 ngày không
+	return time.Now().Sub(recommendations[0].CreatedAt) > 7*24*time.Hour
+}
+
+// generateSmartRecommendations tạo đề xuất thông minh sử dụng AI mới
+func generateSmartRecommendations(userID uint) {
+	// Sử dụng adapter cho SmartSavingAdvisor
+	advisor := ai.NewSmartSavingAdvisor(userID)
+	
+	// Tạo đề xuất tiết kiệm
+	err := advisor.GenerateSmartSavingRecommendations()
+	if err != nil {
+		log.Printf("Lỗi khi tạo đề xuất tiết kiệm: %v", err)
+		// Fallback về phương pháp cũ nếu có lỗi
+		generateNewRecommendations(userID)
+		return
+	}
+	
+	// Tạo đề xuất tối ưu hóa ngân sách
+	err = advisor.GenerateSmartBudgetOptimization()
+	if err != nil {
+		log.Printf("Lỗi khi tạo đề xuất tối ưu hóa ngân sách: %v", err)
+	}
+	
+	// Tạo phân tích tài chính
+	err = advisor.GenerateComprehensiveFinancialInsights()
+	if err != nil {
+		log.Printf("Lỗi khi tạo phân tích tài chính: %v", err)
+	}
 }
 
 // Hàm tạo đề xuất mới dựa trên phân tích chi tiêu
